@@ -760,6 +760,297 @@ body {
   }
 }
 
+/* ===== PORTRAIT ORIENTATION ===== */
+@media (orientation: portrait) and (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: calc(100vh - 60px);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .content {
+    padding: 20px 15px;
+  }
+
+  .hero-section {
+    padding: 30px 15px;
+    margin-bottom: 40px;
+  }
+
+  .hero-section h1 {
+    font-size: 2em;
+    line-height: 1.2;
+  }
+
+  .hero-section p {
+    font-size: 1.1em;
+    margin: 0 auto;
+  }
+
+  .categories-overview {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 40px;
+  }
+
+  .category-card {
+    padding: 20px;
+  }
+
+  .category-card h3 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+  }
+
+  .category-card p {
+    font-size: 0.9em;
+    margin-bottom: 15px;
+  }
+
+  .quick-start-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .quick-start-card {
+    padding: 20px;
+  }
+
+  .sidebar-content {
+    padding: 15px 0;
+  }
+
+  .page-link {
+    padding: 15px 20px;
+  }
+
+  .page-name {
+    font-size: 0.95em;
+  }
+
+  .page-description {
+    font-size: 0.8em;
+  }
+}
+
+/* ===== PORTRAIT TABLETS ===== */
+@media (orientation: portrait) and (min-width: 768px) and (max-width: 1024px) {
+  .sidebar {
+    width: 350px;
+  }
+
+  .main-content {
+    margin-left: 350px;
+  }
+
+  .main-content.sidebar-collapsed {
+    margin-left: 70px;
+  }
+
+  .sidebar.collapsed {
+    width: 70px;
+  }
+
+  .content {
+    padding: 30px 25px;
+    max-width: 900px;
+  }
+
+  .hero-section {
+    padding: 50px 25px;
+  }
+
+  .hero-section h1 {
+    font-size: 2.5em;
+  }
+
+  .categories-overview {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .quick-start-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .markdown-renderer {
+    font-size: 1.1em;
+  }
+
+  .code-block-container {
+    margin: 20px 0;
+  }
+
+  .table-container {
+    font-size: 0.95em;
+  }
+}
+
+/* ===== SMALL PORTRAIT SCREENS ===== */
+@media (orientation: portrait) and (max-width: 480px) {
+  .header {
+    height: 55px;
+    padding: 0 12px;
+  }
+
+  .header-title {
+    font-size: 1em;
+    margin-left: 10px;
+  }
+
+  .menu-btn {
+    font-size: 1.3em;
+    padding: 6px;
+  }
+
+  .sidebar {
+    top: 55px;
+    height: calc(100vh - 55px);
+    width: 100%;
+  }
+
+  .main-content {
+    margin-top: 55px;
+  }
+
+  .content {
+    padding: 15px 12px;
+  }
+
+  .hero-section {
+    padding: 25px 12px;
+    margin-bottom: 30px;
+  }
+
+  .hero-section h1 {
+    font-size: 1.7em;
+    margin-bottom: 15px;
+  }
+
+  .hero-section p {
+    font-size: 1em;
+  }
+
+  .category-card {
+    padding: 18px;
+  }
+
+  .category-card h3 {
+    font-size: 1.1em;
+  }
+
+  .quick-start-card {
+    padding: 18px;
+  }
+
+  .breadcrumb {
+    padding: 10px 15px;
+    font-size: 0.8em;
+    margin-bottom: 20px;
+  }
+
+  .sidebar-header {
+    padding: 15px;
+  }
+
+  .sidebar-header h2 {
+    font-size: 1em;
+  }
+
+  .page-link {
+    padding: 12px 15px;
+  }
+
+  .page-name {
+    font-size: 0.9em;
+  }
+
+  .page-description {
+    font-size: 0.75em;
+  }
+
+  .markdown-renderer h1 {
+    font-size: 1.8em;
+    margin-bottom: 15px;
+  }
+
+  .markdown-renderer h2 {
+    font-size: 1.5em;
+    margin: 25px 0 15px 0;
+  }
+
+  .markdown-renderer h3 {
+    font-size: 1.2em;
+    margin: 20px 0 12px 0;
+  }
+
+  .markdown-renderer p {
+    font-size: 1em;
+    margin-bottom: 16px;
+  }
+
+  .code-block-header {
+    padding: 8px 12px;
+    font-size: 0.8em;
+  }
+
+  .copy-button {
+    padding: 4px 8px;
+    font-size: 0.75em;
+  }
+
+  .inline-code {
+    font-size: 0.85em;
+    padding: 2px 4px;
+  }
+}
+
+/* ===== LANDSCAPE PHONES ===== */
+@media (orientation: landscape) and (max-height: 480px) {
+  .header {
+    height: 50px;
+  }
+
+  .sidebar {
+    top: 50px;
+    height: calc(100vh - 50px);
+    width: 250px;
+  }
+
+  .main-content {
+    margin-top: 50px;
+    margin-left: 250px;
+  }
+
+  .main-content.sidebar-collapsed {
+    margin-left: 50px;
+  }
+
+  .sidebar.collapsed {
+    width: 50px;
+  }
+
+  .content {
+    padding: 20px;
+  }
+
+  .hero-section {
+    padding: 30px 20px;
+  }
+
+  .categories-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quick-start-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* ===== ANIMATION UTILITIES ===== */
 .fade-in {
   animation: fadeIn 0.5s ease-in-out;

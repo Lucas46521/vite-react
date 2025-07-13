@@ -413,10 +413,28 @@ function App() {
       if (window.innerWidth > 768) {
         setIsMobileOpen(false)
       }
+      // Fechar sidebar em orientação landscape em telas pequenas
+      if (window.innerHeight < 480 && window.innerWidth > window.innerHeight) {
+        setIsMobileOpen(false)
+      }
+    }
+
+    const handleOrientationChange = () => {
+      // Aguardar um pouco para a orientação ser aplicada
+      setTimeout(() => {
+        if (window.innerWidth > 768) {
+          setIsMobileOpen(false)
+        }
+      }, 100)
     }
 
     window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    window.addEventListener('orientationchange', handleOrientationChange)
+    
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('orientationchange', handleOrientationChange)
+    }
   }, [])
 
   return (
