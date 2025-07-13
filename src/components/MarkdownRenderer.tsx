@@ -27,9 +27,10 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     >
       <ReactMarkdown
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code({ node, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '')
             const language = match ? match[1] : ''
+            const inline = (props as any).inline
             
             if (!inline && language) {
               return (
@@ -53,10 +54,10 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
                     language={language}
                     PreTag="div"
                     customStyle={{
-                      margin: 0,
+                      margin: '0',
                       borderRadius: '0 0 8px 8px',
                       fontSize: '0.9em'
-                    }}
+                    } as any}
                     {...props}
                   >
                     {String(children).replace(/\n$/, '')}
