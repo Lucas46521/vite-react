@@ -775,7 +775,6 @@ body {
   .sidebar {
     transform: translateX(-100%);
     width: 280px;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .sidebar.mobile-open {
@@ -863,49 +862,53 @@ body {
   }
 }
 
-/* ===== SWIPE INDICATOR ===== */
-.swipe-indicator {
+/* ===== MOBILE SIDEBAR INDICATOR ===== */
+.mobile-sidebar-indicator {
   position: fixed;
-  top: 70px;
+  top: 60px;
   left: 0;
-  width: 50px;
-  height: 50px;
-  background: var(--bg-secondary);
-  border: 2px solid var(--accent-color);
-  border-left: none;
-  border-radius: 0 25px 25px 0;
+  width: 4px;
+  height: 60px;
+  background: var(--gradient-primary);
   z-index: 99;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-medium);
-  backdrop-filter: blur(10px);
   transition: var(--transition-medium);
-}
-
-.swipe-indicator:hover {
-  background: var(--bg-hover);
-  border-color: var(--accent-hover);
-  box-shadow: var(--shadow-large);
-}
-
-.swipe-arrow {
-  color: var(--accent-color);
-  font-size: 1.2em;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.swipe-indicator:hover .swipe-arrow {
-  color: var(--accent-hover);
-}
-
-/* ===== MOBILE SIDEBAR INDICATOR (Deprecated - keeping for compatibility) ===== */
-.mobile-sidebar-indicator {
+  border-radius: 0 4px 4px 0;
+  box-shadow: var(--shadow-small);
   display: none;
+}
+
+.mobile-sidebar-indicator:hover {
+  width: 8px;
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-medium);
+}
+
+.mobile-sidebar-indicator::after {
+  content: '→';
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--text-primary);
+  font-size: 0.8em;
+  opacity: 0;
+  transition: var(--transition-fast);
+  background: var(--bg-secondary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.mobile-sidebar-indicator:hover::after {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .mobile-sidebar-indicator {
+    display: block;
+  }
 }
 
 /* ===== PORTRAIT ORIENTATION ===== */
@@ -913,24 +916,12 @@ body {
   .sidebar {
     width: 100vw;
     height: calc(100vh - 60px);
-    touch-action: pan-x;
   }
 
   .sidebar.mobile-open {
     transform: translateX(0);
     width: 100vw;
   }
-
-  .swipe-indicator {
-    top: 80px;
-    width: 45px;
-    height: 45px;
-  }
-
-  .swipe-arrow {
-    font-size: 1.1em;
-  }
-}
 
   .content {
     padding: 20px 15px;
@@ -1056,17 +1047,6 @@ body {
   .header {
     height: 55px;
     padding: 0 12px;
-  }
-
-  .swipe-indicator {
-    top: 65px;
-    width: 40px;
-    height: 40px;
-    border-radius: 0 20px 20px 0;
-  }
-
-  .swipe-arrow {
-    font-size: 1em;
   }
 
   .header-title {
