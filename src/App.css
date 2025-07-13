@@ -774,13 +774,12 @@ body {
 
   .sidebar {
     transform: translateX(-100%);
-    width: min(280px, 25vw);
-    max-width: 25vw;
+    width: 280px;
   }
 
   .sidebar.mobile-open {
     transform: translateX(0);
-    width: min(320px, 75vw);
+    width: 100vw;
   }
 
   .main-content {
@@ -863,16 +862,65 @@ body {
   }
 }
 
+/* ===== MOBILE SIDEBAR INDICATOR ===== */
+.mobile-sidebar-indicator {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 4px;
+  height: 60px;
+  background: var(--gradient-primary);
+  z-index: 99;
+  cursor: pointer;
+  transition: var(--transition-medium);
+  border-radius: 0 4px 4px 0;
+  box-shadow: var(--shadow-small);
+  display: none;
+}
+
+.mobile-sidebar-indicator:hover {
+  width: 8px;
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-medium);
+}
+
+.mobile-sidebar-indicator::after {
+  content: '→';
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--text-primary);
+  font-size: 0.8em;
+  opacity: 0;
+  transition: var(--transition-fast);
+  background: var(--bg-secondary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.mobile-sidebar-indicator:hover::after {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .mobile-sidebar-indicator {
+    display: block;
+  }
+}
+
 /* ===== PORTRAIT ORIENTATION ===== */
 @media (orientation: portrait) and (max-width: 768px) {
   .sidebar {
-    width: min(300px, 75vw);
+    width: 100vw;
     height: calc(100vh - 60px);
   }
 
   .sidebar.mobile-open {
     transform: translateX(0);
-    width: min(320px, 75vw);
+    width: 100vw;
   }
 
   .content {

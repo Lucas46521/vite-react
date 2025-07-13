@@ -109,9 +109,10 @@ interface SidebarProps {
   onMobileClose: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onLinkClick: () => void;
 }
 
-function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose, onMouseEnter, onMouseLeave }: SidebarProps) {
+function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose, onMouseEnter, onMouseLeave, onLinkClick }: SidebarProps) {
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
 
   const toggleFolder = (folder: string) => {
@@ -249,7 +250,10 @@ function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose, onMouseEn
                                 <Link
                                   to={`/docs/${folder}/${page}`}
                                   className="page-link"
-                                  onClick={onMobileClose}
+                                  onClick={() => {
+                                    onLinkClick()
+                                    onMobileClose()
+                                  }}
                                   title={description}
                                 >
                                   <span className="page-name">{page}</span>
@@ -474,6 +478,15 @@ function App() {
   const toggleSidebar = () => setIsCollapsed(!isCollapsed)
   const openMobileSidebar = () => setIsMobileOpen(true)
   const closeMobileSidebar = () => setIsMobileOpen(false)
+  
+  // Auto-close sidebar after navigation on mobile
+  const handleLinkClick = () => {
+    if (window.innerWidth <= 768) {
+      setTimeout(() => {
+        closeMobileSidebar()
+      }, 200)
+    }
+  }
 
   const handleMouseEnter = () => {
     if (autoHideTimer.current) {
@@ -553,6 +566,22 @@ function App() {
     <Router>
       <div className="app">
         <Header onMenuClick={openMobileSidebar} />
+        
+        {/* Mobile sidebar indicator */}
+        <AnimatePresence>
+          {!isMobileOpen && window.innerWidth <= 768 && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="mobile-sidebar-indicator"
+              onClick={openMobileSidebar}
+              title="Expandir menu"
+            />
+          )}
+        </AnimatePresence>
+        
         <Sidebar 
           isCollapsed={isCollapsed}
           onToggle={toggleSidebar}
@@ -560,6 +589,7 @@ function App() {
           onMobileClose={closeMobileSidebar}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
+          onLinkClick={handleLinkClick}
         />
         <motion.main
           layout
