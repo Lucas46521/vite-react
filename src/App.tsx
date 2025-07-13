@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom'
 import './App.css'
 
@@ -110,9 +110,9 @@ function Sidebar() {
         {Object.entries(docsStructure).map(([categoryName, category]) => (
           <div key={categoryName} className="category">
             <h3>{categoryName}</h3>
-            {Object.entries(category).map(([folder, pages]) => (
+            {Object.entries(category as Record<string, Record<string, string>>).map(([folder, pages]) => (
               <div key={folder} className="folder">
-                {Object.entries(pages).map(([page, description]) => (
+                {Object.entries(pages).map(([page]) => (
                   <Link
                     key={page}
                     to={`/docs/${folder}/${page}`}
@@ -144,7 +144,7 @@ function HomePage() {
           {Object.entries(docsStructure).map(([categoryName, category]) => (
             <div key={categoryName} className="category-card">
               <h3>{categoryName}</h3>
-              <p>{Object.keys(category).reduce((acc, folder) => acc + Object.keys(category[folder]).length, 0)} páginas</p>
+              <p>{Object.keys(category).reduce((acc, folder) => acc + Object.keys((category as Record<string, Record<string, string>>)[folder]).length, 0)} páginas</p>
             </div>
           ))}
         </div>
