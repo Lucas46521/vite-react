@@ -469,7 +469,7 @@ function App() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-  const autoHideTimer = useRef<NodeJS.Timeout | null>(null)
+  const autoHideTimer = useRef<number | null>(null)
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed)
   const openMobileSidebar = () => setIsMobileOpen(true)
