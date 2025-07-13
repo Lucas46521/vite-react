@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion'
 import { MarkdownRenderer } from './components/MarkdownRenderer'
 import './App.css'
 
@@ -142,6 +142,11 @@ function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose, onMouseEn
         className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
+        style={{ x: window.innerWidth <= 768 ? x : 0, opacity: window.innerWidth <= 768 ? opacity : 1 }}
+        drag={window.innerWidth <= 768 && isMobileOpen ? "x" : false}
+        dragConstraints={{ left: -300, right: 0 }}
+        dragElastic={0.2}
+        onDragEnd={handleSwipe}
       >
         <div className="sidebar-header">
           <AnimatePresence>
@@ -473,11 +478,35 @@ function App() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isSwipeIndicatorVisible, setIsSwipeIndicatorVisible] = useState(false)
   const autoHideTimer = useRef<number | null>(null)
+  const x = useMotionValue(0)
+  const opacity = useTransform(x, [-150, 0], [0, 1])
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed)
-  const openMobileSidebar = () => setIsMobileOpen(true)
-  const closeMobileSidebar = () => setIsMobileOpen(false)
+  const openMobileSidebar = () => {
+    setIsMobileOpen(true)
+    setIsSwipeIndicatorVisible(false)
+  }
+  const closeMobileSidebar = () => {
+    setIsMobileOpen(false)
+    if (window.innerWidth <= 768) {
+      setIsSwipeIndicatorVisible(true)
+    }
+  }
+
+  const handleSwipe = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (window.innerWidth <= 768 && isMobileOpen) {
+      const swipeThreshold = -100
+      if (info.offset.x < swipeThreshold) {
+        closeMobileSidebar()
+      }
+    }
+  }
+
+  const handleSwipeIndicatorClick = () => {
+    openMobileSidebar()
+  }
   
   // Auto-close sidebar after navigation on mobile
   const handleLinkClick = () => {
@@ -513,6 +542,7 @@ function App() {
     const handleResize = () => {
       if (window.innerWidth > 768) {
         setIsMobileOpen(false)
+        setIsSwipeIndicatorVisible(false)
         // Auto-colapsar em desktop se não estiver sendo usado
         if (!isHovered) {
           setIsCollapsed(true)
@@ -520,11 +550,18 @@ function App() {
       } else {
         // Em mobile, sempre colapsar quando redimensionar
         setIsCollapsed(false)
+        // Exibir indicador de swipe se sidebar estiver fechada
+        if (!isMobileOpen) {
+          setIsSwipeIndicatorVisible(true)
+        }
       }
       
       // Fechar sidebar em orientação landscape em telas pequenas
       if (window.innerHeight < 480 && window.innerWidth > window.innerHeight) {
         setIsMobileOpen(false)
+        if (window.innerWidth <= 768) {
+          setIsSwipeIndicatorVisible(true)
+        }
       }
     }
 
@@ -539,6 +576,9 @@ function App() {
     // Auto-colapsar ao carregar a página em desktop
     if (window.innerWidth > 768) {
       setIsCollapsed(true)
+    } else {
+      // Em mobile, exibir indicador de swipe inicialmente
+      setIsSwipeIndicatorVisible(true)
     }
 
     window.addEventListener('resize', handleResize)
@@ -567,18 +607,32 @@ function App() {
       <div className="app">
         <Header onMenuClick={openMobileSidebar} />
         
-        {/* Mobile sidebar indicator */}
+        {/* Mobile swipe indicator */}
         <AnimatePresence>
-          {!isMobileOpen && window.innerWidth <= 768 && (
+          {isSwipeIndicatorVisible && !isMobileOpen && (
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="mobile-sidebar-indicator"
-              onClick={openMobileSidebar}
-              title="Expandir menu"
-            />
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
+              className="swipe-indicator"
+              onClick={handleSwipeIndicatorClick}
+              title="Deslize ou toque para abrir o menu"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <motion.div
+                className="swipe-arrow"
+                animate={{ x: [0, 5, 0] }}
+                transition={{ 
+                  duration: 1.5, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              >
+                →
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
         
