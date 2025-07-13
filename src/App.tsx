@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MarkdownRenderer } from './components/MarkdownRenderer'
 import './App.css'
 
 // Estrutura da documentação
@@ -110,82 +112,198 @@ interface SidebarProps {
 function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
-      {/* Mobile overlay */}
-      <div 
-        className={`mobile-overlay ${isMobileOpen ? 'active' : ''}`}
-        onClick={onMobileClose}
-      />
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mobile-overlay"
+            onClick={onMobileClose}
+          />
+        )}
+      </AnimatePresence>
       
-      <nav className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+      <motion.nav
+        initial={{ x: -300 }}
+        animate={{ x: 0 }}
+        className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
+      >
         <div className="sidebar-header">
-          <h2>📚 Helper.DB Wiki</h2>
-          <button className="collapse-btn desktop-only" onClick={onToggle}>
+          <motion.h2
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            📚 Helper.DB Wiki
+          </motion.h2>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="collapse-btn desktop-only"
+            onClick={onToggle}
+          >
             {isCollapsed ? '→' : '←'}
-          </button>
-          <button className="close-btn mobile-only" onClick={onMobileClose}>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="close-btn mobile-only"
+            onClick={onMobileClose}
+          >
             ✕
-          </button>
+          </motion.button>
         </div>
         
-        {!isCollapsed && (
-          <div className="sidebar-content">
-            {Object.entries(docsStructure).map(([categoryName, category]) => (
-              <div key={categoryName} className="category">
-                <h3>{categoryName}</h3>
-                {Object.entries(category as Record<string, Record<string, string>>).map(([folder, pages]) => (
-                  <div key={folder} className="folder">
-                    {Object.entries(pages).map(([page]) => (
-                      <Link
-                        key={page}
-                        to={`/docs/${folder}/${page}`}
-                        className="page-link"
-                        onClick={onMobileClose}
-                      >
-                        {page}
-                      </Link>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-      </nav>
+        <AnimatePresence>
+          {!isCollapsed && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="sidebar-content"
+            >
+              {Object.entries(docsStructure).map(([categoryName, category], categoryIndex) => (
+                <motion.div
+                  key={categoryName}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * categoryIndex }}
+                  className="category"
+                >
+                  <h3>{categoryName}</h3>
+                  {Object.entries(category as Record<string, Record<string, string>>).map(([folder, pages]) => (
+                    <div key={folder} className="folder">
+                      {Object.entries(pages).map(([page, description], pageIndex) => (
+                        <motion.div
+                          key={page}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.05 * pageIndex }}
+                          whileHover={{ x: 5 }}
+                        >
+                          <Link
+                            to={`/docs/${folder}/${page}`}
+                            className="page-link"
+                            onClick={onMobileClose}
+                            title={description}
+                          >
+                            <span className="page-name">{page}</span>
+                            <span className="page-description">{description}</span>
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ))}
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.nav>
     </>
   )
 }
 
 function Header({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <header className="header">
-      <button className="menu-btn mobile-only" onClick={onMenuClick}>
+    <motion.header
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="header"
+    >
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="menu-btn mobile-only"
+        onClick={onMenuClick}
+      >
         ☰
-      </button>
+      </motion.button>
       <h1 className="header-title">Helper.DB Wiki</h1>
-    </header>
+    </motion.header>
   )
 }
 
 function HomePage() {
   return (
-    <div className="content">
-      <h1>📚 Documentação Helper.DB</h1>
-      <p>Bem-vindo à documentação completa da Helper.DB!</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="content"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="hero-section"
+      >
+        <h1>📚 Documentação Helper.DB</h1>
+        <p>Bem-vindo à documentação completa da Helper.DB!</p>
+      </motion.div>
       
-      <div className="overview">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="overview"
+      >
         <h2>Visão Geral</h2>
         <p>Esta wiki contém toda a documentação da Helper.DB, organizada por categoria e funcionalidade.</p>
         
         <div className="categories-overview">
-          {Object.entries(docsStructure).map(([categoryName, category]) => (
-            <div key={categoryName} className="category-card">
+          {Object.entries(docsStructure).map(([categoryName, category], index) => (
+            <motion.div
+              key={categoryName}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.5 + (index * 0.1) }}
+              whileHover={{ 
+                scale: 1.02,
+                transition: { duration: 0.2 }
+              }}
+              className="category-card"
+            >
               <h3>{categoryName}</h3>
               <p>{Object.keys(category).reduce((acc, folder) => acc + Object.keys((category as Record<string, Record<string, string>>)[folder]).length, 0)} páginas</p>
-            </div>
+              <div className="category-card-footer">
+                <span className="explore-btn">Explorar →</span>
+              </div>
+            </motion.div>
           ))}
         </div>
-      </div>
-    </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.8 }}
+        className="quick-start"
+      >
+        <h2>🚀 Início Rápido</h2>
+        <div className="quick-start-grid">
+          <div className="quick-start-card">
+            <h3>🔧 Métodos Básicos</h3>
+            <p>Aprenda os fundamentos: set, get, has, delete</p>
+            <Link to="/docs/basic/set" className="quick-link">Começar →</Link>
+          </div>
+          <div className="quick-start-card">
+            <h3>🔍 Sistema de Busca</h3>
+            <p>Descubra como buscar e filtrar dados</p>
+            <Link to="/docs/search/search" className="quick-link">Explorar →</Link>
+          </div>
+          <div className="quick-start-card">
+            <h3>📊 Arrays</h3>
+            <p>Manipule arrays com facilidade</p>
+            <Link to="/docs/arrays/push" className="quick-link">Ver Exemplos →</Link>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -193,19 +311,22 @@ function DocPage() {
   const { folder, page } = useParams<{ folder: string; page: string }>()
   const [content, setContent] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadContent = async () => {
+      setLoading(true)
+      setError(null)
       try {
         const response = await fetch(`/docs/${folder}/${page}.mdx`)
         if (response.ok) {
           const text = await response.text()
           setContent(text)
         } else {
-          setContent(`# Página não encontrada\n\nA página ${folder}/${page} não foi encontrada.`)
+          setError(`Página não encontrada: ${folder}/${page}`)
         }
       } catch (error) {
-        setContent(`# Erro ao carregar\n\nErro ao carregar a página: ${error}`)
+        setError(`Erro ao carregar a página: ${error}`)
       } finally {
         setLoading(false)
       }
@@ -215,18 +336,67 @@ function DocPage() {
   }, [folder, page])
 
   if (loading) {
-    return <div className="content loading">Carregando...</div>
+    return (
+      <div className="content">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="loading-container"
+        >
+          <div className="loading-spinner"></div>
+          <p>Carregando documentação...</p>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="content error-page"
+      >
+        <h1>❌ Erro</h1>
+        <p>{error}</p>
+        <Link to="/" className="back-home">← Voltar ao Início</Link>
+      </motion.div>
+    )
   }
 
   return (
-    <div className="content">
-      <div className="breadcrumb">
-        <Link to="/">Home</Link> / <span>{folder}</span> / <span>{page}</span>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="content"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="breadcrumb"
+      >
+        <Link to="/">Home</Link> 
+        <span className="separator">/</span> 
+        <span className="folder">{folder}</span> 
+        <span className="separator">/</span> 
+        <span className="page">{page}</span>
+      </motion.div>
+      
+      <div className="doc-content">
+        <MarkdownRenderer content={content} />
       </div>
-      <div className="markdown-content">
-        <pre>{content}</pre>
-      </div>
-    </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.5 }}
+        className="doc-footer"
+      >
+        <Link to="/" className="back-home">← Voltar ao Início</Link>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -238,7 +408,6 @@ function App() {
   const openMobileSidebar = () => setIsMobileOpen(true)
   const closeMobileSidebar = () => setIsMobileOpen(false)
 
-  // Close mobile sidebar on window resize to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 768) {
@@ -260,12 +429,17 @@ function App() {
           isMobileOpen={isMobileOpen}
           onMobileClose={closeMobileSidebar}
         />
-        <main className={`main-content ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/docs/:folder/:page" element={<DocPage />} />
-          </Routes>
-        </main>
+        <motion.main
+          layout
+          className={`main-content ${isCollapsed ? 'sidebar-collapsed' : ''}`}
+        >
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/docs/:folder/:page" element={<DocPage />} />
+            </Routes>
+          </AnimatePresence>
+        </motion.main>
       </div>
     </Router>
   )
