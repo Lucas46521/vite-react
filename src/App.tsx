@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MarkdownRenderer } from './components/MarkdownRenderer'
@@ -107,9 +107,19 @@ interface SidebarProps {
   onToggle: () => void;
   isMobileOpen: boolean;
   onMobileClose: () => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
 }
 
-function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
+function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose, onMouseEnter, onMouseLeave }: SidebarProps) {
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
+
+  const toggleFolder = (folder: string) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [folder]: !prev[folder]
+    }))
+  }
   return (
     <>
       <AnimatePresence>
@@ -129,23 +139,51 @@ function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: Sidebar
         initial={{ x: -300 }}
         animate={{ x: 0 }}
         className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
         <div className="sidebar-header">
-          <motion.h2
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            📚 Helper.DB Wiki
-          </motion.h2>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="collapse-btn desktop-only"
-            onClick={onToggle}
-          >
-            {isCollapsed ? '→' : '←'}
-          </motion.button>
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.h2
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                📚 Helper.DB Wiki
+              </motion.h2>
+            )}
+          </AnimatePresence>
+          
+          {isCollapsed && (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="menu-toggle-btn"
+              onClick={onToggle}
+              title="Expandir menu"
+            >
+              ☰
+            </motion.button>
+          )}
+
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="collapse-btn desktop-only"
+                onClick={onToggle}
+              >
+                ←
+              </motion.button>
+            )}
+          </AnimatePresence>
+          
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -175,26 +213,53 @@ function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: Sidebar
                 >
                   <h3>{categoryName}</h3>
                   {Object.entries(category as Record<string, Record<string, string>>).map(([folder, pages]) => (
-                    <div key={folder} className="folder">
-                      {Object.entries(pages).map(([page, description], pageIndex) => (
-                        <motion.div
-                          key={page}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.05 * pageIndex }}
-                          whileHover={{ x: 5 }}
-                        >
-                          <Link
-                            to={`/docs/${folder}/${page}`}
-                            className="page-link"
-                            onClick={onMobileClose}
-                            title={description}
+                    <div key={folder} className="folder-container">
+                      <motion.button
+                        className="folder-header"
+                        onClick={() => toggleFolder(folder)}
+                        whileHover={{ x: 3 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <span className="folder-icon">
+                          {expandedFolders[folder] ? '📂' : '📁'}
+                        </span>
+                        <span className="folder-name">{folder}</span>
+                        <span className="folder-toggle">
+                          {expandedFolders[folder] ? '−' : '+'}
+                        </span>
+                      </motion.button>
+                      
+                      <AnimatePresence>
+                        {expandedFolders[folder] && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="folder-content"
                           >
-                            <span className="page-name">{page}</span>
-                            <span className="page-description">{description}</span>
-                          </Link>
-                        </motion.div>
-                      ))}
+                            {Object.entries(pages).map(([page, description], pageIndex) => (
+                              <motion.div
+                                key={page}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.03 * pageIndex }}
+                                whileHover={{ x: 5 }}
+                              >
+                                <Link
+                                  to={`/docs/${folder}/${page}`}
+                                  className="page-link"
+                                  onClick={onMobileClose}
+                                  title={description}
+                                >
+                                  <span className="page-name">{page}</span>
+                                  <span className="page-description">{description}</span>
+                                </Link>
+                              </motion.div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   ))}
                 </motion.div>
@@ -403,16 +468,47 @@ function DocPage() {
 function App() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const autoHideTimer = useRef<NodeJS.Timeout | null>(null)
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed)
   const openMobileSidebar = () => setIsMobileOpen(true)
   const closeMobileSidebar = () => setIsMobileOpen(false)
 
+  const handleMouseEnter = () => {
+    if (autoHideTimer.current) {
+      clearTimeout(autoHideTimer.current)
+    }
+    setIsHovered(true)
+    if (isCollapsed && window.innerWidth > 768) {
+      setIsCollapsed(false)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    setIsHovered(false)
+    if (window.innerWidth > 768) {
+      autoHideTimer.current = setTimeout(() => {
+        if (!isHovered) {
+          setIsCollapsed(true)
+        }
+      }, 3000) // Auto-hide após 3 segundos sem uso
+    }
+  }
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 768) {
         setIsMobileOpen(false)
+        // Auto-colapsar em desktop se não estiver sendo usado
+        if (!isHovered) {
+          setIsCollapsed(true)
+        }
+      } else {
+        // Em mobile, sempre colapsar quando redimensionar
+        setIsCollapsed(false)
       }
+      
       // Fechar sidebar em orientação landscape em telas pequenas
       if (window.innerHeight < 480 && window.innerWidth > window.innerHeight) {
         setIsMobileOpen(false)
@@ -420,12 +516,16 @@ function App() {
     }
 
     const handleOrientationChange = () => {
-      // Aguardar um pouco para a orientação ser aplicada
       setTimeout(() => {
         if (window.innerWidth > 768) {
           setIsMobileOpen(false)
         }
       }, 100)
+    }
+
+    // Auto-colapsar ao carregar a página em desktop
+    if (window.innerWidth > 768) {
+      setIsCollapsed(true)
     }
 
     window.addEventListener('resize', handleResize)
@@ -434,6 +534,18 @@ function App() {
     return () => {
       window.removeEventListener('resize', handleResize)
       window.removeEventListener('orientationchange', handleOrientationChange)
+      if (autoHideTimer.current) {
+        clearTimeout(autoHideTimer.current)
+      }
+    }
+  }, [isHovered])
+
+  // Limpar timer quando component for desmontado
+  useEffect(() => {
+    return () => {
+      if (autoHideTimer.current) {
+        clearTimeout(autoHideTimer.current)
+      }
     }
   }, [])
 
@@ -446,6 +558,8 @@ function App() {
           onToggle={toggleSidebar}
           isMobileOpen={isMobileOpen}
           onMobileClose={closeMobileSidebar}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         />
         <motion.main
           layout
