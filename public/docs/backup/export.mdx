@@ -1,0 +1,106 @@
+
+---
+title: export()
+description: Exporta dados em diferentes formatos
+---
+
+# export()
+
+Exporta dados do banco em diferentes formatos (JSON, CSV, XML) para integração com outras ferramentas.
+
+## Sintaxe
+
+```typescript
+await db.export(format: 'json' | 'csv' | 'xml', options?: ExportOptions): Promise<ExportResult>
+```
+
+## Parâmetros
+
+- `format`: Formato de exportação ('json', 'csv', 'xml')
+- `options` (opcional): Configurações de exportação
+  - `path`: Caminho de destino do arquivo
+  - `filter`: Função para filtrar dados
+  - `fields`: Campos específicos para exportar
+
+## Retorno
+
+```typescript
+{
+  path: string,
+  format: string,
+  recordCount: number,
+  size: number
+}
+```
+
+## Exemplos
+
+### Exportação JSON
+```javascript
+const result = await db.export('json', {
+  path: './exports/data.json'
+});
+
+console.log(`${result.recordCount} registros exportados para JSON`);
+```
+
+### Exportação CSV
+```javascript
+const result = await db.export('csv', {
+  path: './exports/users.csv',
+  filter: (value, key) => key.startsWith('user:'),
+  fields: ['name', 'email', 'age'] // Apenas estes campos
+});
+```
+
+### Exportação XML
+```javascript
+const result = await db.export('xml', {
+  path: './exports/config.xml',
+  filter: (value, key) => key.startsWith('config:')
+});
+```
+
+### Exportação Filtrada
+```javascript
+// Exportar apenas usuários ativos
+const result = await db.export('json', {
+  path: './active-users.json',
+  filter: (user, key) => {
+    return key.startsWith('user:') && user.active === true;
+  }
+});
+```
+
+### Exportação com Campos Específicos
+```javascript
+// Exportar apenas dados essenciais
+const result = await db.export('csv', {
+  fields: ['id', 'name', 'email'],
+  filter: (value, key) => key.startsWith('user:')
+});
+```
+
+## Formatos Suportados
+
+### JSON
+- Estrutura hierárquica preservada
+- Ideal para backup e migração
+- Fácil re-importação
+
+### CSV
+- Formato tabular
+- Ideal para análise em Excel/Sheets
+- Requer dados estruturados
+
+### XML
+- Estrutura hierárquica
+- Ideal para integração com sistemas legados
+- Suporte a metadados
+
+## Casos de Uso
+
+- Relatórios para análise
+- Migração de dados
+- Backup em formato legível
+- Integração com ferramentas externas

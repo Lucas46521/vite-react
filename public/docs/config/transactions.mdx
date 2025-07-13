@@ -1,0 +1,379 @@
+
+# Sistema de Transações
+
+O HelperDB oferece um sistema robusto de transações que garante consistência dos dados através de operações atômicas com suporte a rollback.
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './data.sqlite',
+    transactions: {
+        enabled: true,
+        isolation: 'READ_COMMITTED',
+        timeout: 30000, // 30 segundos
+        maxRetries: 3
+    }
+});
+```
+
+## Transações Básicas
+
+### Transação Simples
+```javascript
+// Iniciar transação
+const transaction = await db.transaction();
+
+try {
+    await transaction.set('user:1', { name: 'João', balance: 1000 });
+    await transaction.set('user:2', { name: 'Maria', balance: 500 });
+    
+    // Confirmar alterações
+    await transaction.commit();
+    console.log('✅ Transação concluída');
+} catch (error) {
+    // Reverter alterações
+    await transaction.rollback();
+    console.error('❌ Transação revertida:', error);
+}
+```
+
+### Transação com Callback
+```javascript
+await db.transaction(async (tx) => {
+    await tx.set('user:1', { name: 'João', balance: 1000 });
+    await tx.set('user:2', { name: 'Maria', balance: 500 });
+    
+    // Se qualquer erro ocorrer, rollback automático
+    const user1 = await tx.get('user:1');
+    if (user1.balance < 0) {
+        throw new Error('Saldo não pode ser negativo');
+    }
+    
+    // Commit automático se não houver erros
+});
+```
+
+## Níveis de Isolamento
+
+### READ_UNCOMMITTED
+```javascript
+const db = new HelperDB({
+    transactions: {
+        isolation: 'READ_UNCOMMITTED' // Menor isolamento, maior performance
+    }
+});
+```
+
+### READ_COMMITTED
+```javascript
+const db = new HelperDB({
+    transactions: {
+        isolation: 'READ_COMMITTED' // Padrão - bom equilíbrio
+    }
+});
+```
+
+### REPEATABLE_READ
+```javascript
+const db = new HelperDB({
+    transactions: {
+        isolation: 'REPEATABLE_READ' // Maior consistência
+    }
+});
+```
+
+### SERIALIZABLE
+```javascript
+const db = new HelperDB({
+    transactions: {
+        isolation: 'SERIALIZABLE' // Máximo isolamento
+    }
+});
+```
+
+## Operações Transacionais
+
+### Transferência de Dinheiro
+```javascript
+async function transferMoney(fromUserId, toUserId, amount) {
+    return await db.transaction(async (tx) => {
+        // Obter saldos atuais
+        const fromUser = await tx.get(`user:${fromUserId}`);
+        const toUser = await tx.get(`user:${toUserId}`);
+        
+        // Validações
+        if (!fromUser || !toUser) {
+            throw new Error('Usuário não encontrado');
+        }
+        
+        if (fromUser.balance < amount) {
+            throw new Error('Saldo insuficiente');
+        }
+        
+        // Atualizar saldos
+        fromUser.balance -= amount;
+        toUser.balance += amount;
+        
+        await tx.set(`user:${fromUserId}`, fromUser);
+        await tx.set(`user:${toUserId}`, toUser);
+        
+        // Registrar transação
+        await tx.set(`transaction:${Date.now()}`, {
+            from: fromUserId,
+            to: toUserId,
+            amount,
+            timestamp: new Date().toISOString()
+        });
+        
+        return { success: true, newBalance: fromUser.balance };
+    });
+}
+
+// Uso
+try {
+    const result = await transferMoney(1, 2, 100);
+    console.log('Transferência realizada:', result);
+} catch (error) {
+    console.error('Falha na transferência:', error.message);
+}
+```
+
+## Transações Aninhadas (Savepoints)
+
+```javascript
+await db.transaction(async (tx) => {
+    await tx.set('user:1', { name: 'João' });
+    
+    // Criar savepoint
+    const savepoint = await tx.savepoint('user_creation');
+    
+    try {
+        // Operações que podem falhar
+        await tx.set('user:2', { name: 'Maria', invalidField: null });
+        await tx.set('profile:2', { userId: 2, avatar: 'large_file.jpg' });
+        
+        // Commit do savepoint
+        await savepoint.release();
+    } catch (error) {
+        // Rollback apenas para o savepoint
+        await savepoint.rollback();
+        console.log('Rollback parcial realizado');
+    }
+    
+    // user:1 ainda será commitado
+});
+```
+
+## Controle de Concorrência
+
+### Lock de Registros
+```javascript
+await db.transaction(async (tx) => {
+    // Lock exclusivo
+    const user = await tx.get('user:1', { lock: 'exclusive' });
+    
+    // Operações críticas
+    user.balance += 100;
+    await tx.set('user:1', user);
+    
+    // Lock será liberado automaticamente no commit
+});
+```
+
+### Lock de Leitura
+```javascript
+await db.transaction(async (tx) => {
+    // Lock compartilhado (múltiplas leituras, sem escrita)
+    const users = await tx.search('user:*', { lock: 'shared' });
+    
+    // Processar dados sem modificá-los
+    const totalBalance = users.reduce((sum, [_, user]) => sum + user.balance, 0);
+    
+    await tx.set('stats:total_balance', totalBalance);
+});
+```
+
+## Configuração Avançada
+
+```javascript
+const db = new HelperDB({
+    driver: 'postgres',
+    transactions: {
+        enabled: true,
+        isolation: 'READ_COMMITTED',
+        timeout: 30000,
+        maxRetries: 3,
+        
+        // Configurações de performance
+        maxConnections: 10,
+        connectionTimeout: 5000,
+        
+        // Deadlock detection
+        deadlockDetection: true,
+        deadlockTimeout: 10000,
+        
+        // Callbacks
+        onBegin: (txId) => {
+            console.log(`🔄 Transação iniciada: ${txId}`);
+        },
+        
+        onCommit: (txId, duration) => {
+            console.log(`✅ Transação commitada: ${txId} (${duration}ms)`);
+        },
+        
+        onRollback: (txId, reason) => {
+            console.log(`❌ Transação revertida: ${txId} - ${reason}`);
+        },
+        
+        onDeadlock: (txId, conflictingTxId) => {
+            console.warn(`⚠️ Deadlock detectado: ${txId} vs ${conflictingTxId}`);
+        }
+    }
+});
+```
+
+## Monitoramento de Transações
+
+### Estatísticas
+```javascript
+const stats = await db.transactions.getStats();
+console.log(stats);
+// {
+//   active: 2,
+//   committed: 1250,
+//   rolledBack: 15,
+//   deadlocks: 2,
+//   avgDuration: 150, // ms
+//   successRate: 0.988
+// }
+```
+
+### Transações Ativas
+```javascript
+const active = await db.transactions.getActive();
+console.log(active);
+// [
+//   {
+//     id: 'tx_001',
+//     startTime: '2023-12-15T14:30:00Z',
+//     duration: 5000,
+//     operations: 3,
+//     isolation: 'READ_COMMITTED'
+//   }
+// ]
+```
+
+### Eventos
+```javascript
+db.on('transaction:begin', (txInfo) => {
+    console.log('Transação iniciada:', txInfo.id);
+});
+
+db.on('transaction:commit', (txInfo) => {
+    console.log(`Transação commitada: ${txInfo.id} (${txInfo.duration}ms)`);
+});
+
+db.on('transaction:rollback', (txInfo) => {
+    console.log(`Transação revertida: ${txInfo.id} - ${txInfo.reason}`);
+});
+
+db.on('transaction:timeout', (txInfo) => {
+    console.warn(`Transação expirou: ${txInfo.id}`);
+});
+```
+
+## Exemplo Completo - Sistema de Pedidos
+
+```javascript
+class OrderService {
+    constructor(db) {
+        this.db = db;
+    }
+    
+    async createOrder(userId, items) {
+        return await this.db.transaction(async (tx) => {
+            // Verificar usuário
+            const user = await tx.get(`user:${userId}`);
+            if (!user) {
+                throw new Error('Usuário não encontrado');
+            }
+            
+            // Calcular total e verificar estoque
+            let total = 0;
+            const reservedItems = [];
+            
+            for (const item of items) {
+                const product = await tx.get(`product:${item.productId}`, { 
+                    lock: 'exclusive' 
+                });
+                
+                if (!product) {
+                    throw new Error(`Produto ${item.productId} não encontrado`);
+                }
+                
+                if (product.stock < item.quantity) {
+                    throw new Error(`Estoque insuficiente para ${product.name}`);
+                }
+                
+                // Reservar estoque
+                product.stock -= item.quantity;
+                await tx.set(`product:${item.productId}`, product);
+                
+                total += product.price * item.quantity;
+                reservedItems.push({
+                    productId: item.productId,
+                    name: product.name,
+                    price: product.price,
+                    quantity: item.quantity
+                });
+            }
+            
+            // Verificar saldo
+            if (user.balance < total) {
+                throw new Error('Saldo insuficiente');
+            }
+            
+            // Criar pedido
+            const orderId = `order:${Date.now()}`;
+            const order = {
+                id: orderId,
+                userId,
+                items: reservedItems,
+                total,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+            
+            await tx.set(orderId, order);
+            
+            // Debitar do usuário
+            user.balance -= total;
+            await tx.set(`user:${userId}`, user);
+            
+            // Atualizar estatísticas
+            await tx.add('stats:total_orders', 1);
+            await tx.add('stats:revenue', total);
+            
+            return order;
+        });
+    }
+}
+
+// Uso
+const orderService = new OrderService(db);
+
+try {
+    const order = await orderService.createOrder(1, [
+        { productId: 'prod:1', quantity: 2 },
+        { productId: 'prod:2', quantity: 1 }
+    ]);
+    
+    console.log('✅ Pedido criado:', order.id);
+} catch (error) {
+    console.error('❌ Falha ao criar pedido:', error.message);
+}
+```

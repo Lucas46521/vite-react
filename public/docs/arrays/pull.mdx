@@ -1,0 +1,65 @@
+
+# pull()
+
+Remove elementos específicos de um array no banco de dados.
+
+## Sintaxe
+
+```javascript
+await db.pull(key, ...elementos)
+```
+
+## Parâmetros
+
+- `key` (string): Chave do array no banco
+- `elementos` (any[]): Elementos a serem removidos
+
+## Retorno
+
+Retorna o array atualizado após a remoção.
+
+## Exemplos
+
+### Uso Básico
+
+```javascript
+// Array inicial: ['apple', 'banana', 'orange', 'apple']
+await db.set('frutas', ['apple', 'banana', 'orange', 'apple']);
+
+// Remove todas as ocorrências de 'apple'
+const resultado = await db.pull('frutas', 'apple');
+console.log(resultado); // ['banana', 'orange']
+```
+
+### Removendo Múltiplos Elementos
+
+```javascript
+await db.set('numeros', [1, 2, 3, 4, 5, 6]);
+
+// Remove múltiplos elementos
+const resultado = await db.pull('numeros', 2, 4, 6);
+console.log(resultado); // [1, 3, 5]
+```
+
+### Com Objetos
+
+```javascript
+const usuarios = [
+  { id: 1, nome: 'João' },
+  { id: 2, nome: 'Maria' },
+  { id: 3, nome: 'Pedro' }
+];
+
+await db.set('usuarios', usuarios);
+
+// Remove usuário específico
+const usuarioParaRemover = { id: 2, nome: 'Maria' };
+await db.pull('usuarios', usuarioParaRemover);
+```
+
+## Notas
+
+- Remove todas as ocorrências dos elementos especificados
+- A comparação é feita por valor para primitivos e por referência para objetos
+- Se a chave não existir, será criada como um array vazio
+- Se o valor não for um array, será convertido para array

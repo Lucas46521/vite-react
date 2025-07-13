@@ -1,0 +1,86 @@
+
+# JSON Driver
+
+O JSON Driver armazena dados em arquivos JSON, ideal para desenvolvimento e aplicações pequenas que precisam de persistência legível.
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    driver: 'json',
+    filePath: './data.json',
+    autoSave: true,
+    indent: 2
+});
+
+await db.init();
+```
+
+## Opções Específicas
+
+### `filePath`
+- **Tipo**: `string`
+- **Padrão**: `'./db.json'`
+- **Descrição**: Caminho para o arquivo JSON
+
+### `autoSave`
+- **Tipo**: `boolean`
+- **Padrão**: `true`
+- **Descrição**: Salva automaticamente após cada operação
+
+### `indent`
+- **Tipo**: `number`
+- **Padrão**: `2`
+- **Descrição**: Indentação do JSON para melhor legibilidade
+
+## Características
+
+### ✅ **Vantagens**
+- 📖 **Legível**: Dados em formato JSON legível
+- 🔧 **Simples**: Fácil de configurar e usar
+- 📝 **Editável**: Pode ser editado manualmente
+- 🚀 **Rápido**: Operações em memória
+
+### ⚠️ **Limitações**
+- 📏 **Tamanho**: Não recomendado para grandes volumes
+- 🔒 **Concorrência**: Não suporta múltiplos processos
+- 💾 **Memória**: Carrega tudo na memória
+
+## Exemplo de Uso
+
+```javascript
+// Configuração básica
+const db = new HelperDB({
+    driver: 'json',
+    filePath: './users.json',
+    autoSave: true,
+    indent: 2
+});
+
+await db.init();
+
+// Operações básicas
+await db.set('user:1', { 
+    name: 'João', 
+    email: 'joao@email.com' 
+});
+
+const user = await db.get('user:1');
+console.log(user); // { name: 'João', email: 'joao@email.com' }
+
+// O arquivo users.json será criado automaticamente:
+// {
+//   "user:1": {
+//     "name": "João",
+//     "email": "joao@email.com"
+//   }
+// }
+```
+
+## Performance
+
+- **Leitura**: Muito rápida (dados em memória)
+- **Escrita**: Rápida para pequenos volumes
+- **Recomendado para**: < 10MB de dados

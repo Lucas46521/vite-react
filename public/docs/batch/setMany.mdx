@@ -1,0 +1,64 @@
+
+---
+title: setMany()
+description: Define múltiplos valores em uma única operação
+---
+
+# setMany()
+
+Define múltiplos pares chave-valor em uma única operação otimizada, muito mais eficiente que múltiplas chamadas `set()`.
+
+## Sintaxe
+
+```typescript
+await db.setMany(data: Record<string, any>): Promise<void>
+```
+
+## Parâmetros
+
+- `data`: Objeto com pares chave-valor a serem definidos
+
+## Exemplos
+
+### Definição Básica
+```javascript
+await db.setMany({
+  'user:1': { name: 'João', age: 25 },
+  'user:2': { name: 'Maria', age: 30 },
+  'config:theme': 'dark',
+  'config:lang': 'pt-BR'
+});
+```
+
+### Configuração em Lote
+```javascript
+const config = {
+  'app:version': '1.0.0',
+  'app:debug': false,
+  'app:maxUsers': 1000,
+  'app:features': ['auth', 'api', 'dashboard']
+};
+
+await db.setMany(config);
+```
+
+### Performance vs set() Individual
+```javascript
+// ❌ Lento - múltiplas operações
+for (let i = 0; i < 1000; i++) {
+  await db.set(`item:${i}`, { id: i, value: Math.random() });
+}
+
+// ✅ Rápido - operação única
+const items = {};
+for (let i = 0; i < 1000; i++) {
+  items[`item:${i}`] = { id: i, value: Math.random() };
+}
+await db.setMany(items);
+```
+
+## Vantagens
+
+- **Performance**: Até 300% mais rápido que operações individuais
+- **Atomicidade**: Todas as operações são executadas juntas
+- **Eficiência**: Reduz overhead de múltiplas transações

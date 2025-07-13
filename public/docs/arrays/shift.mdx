@@ -1,0 +1,318 @@
+
+# shift()
+
+Remove e retorna o primeiro elemento de um array.
+
+## Sintaxe
+
+```javascript
+await db.shift(key)
+```
+
+## Parâmetros
+
+- **key** (string): A chave do array
+
+## Retorno
+
+- **Promise<any>**: O elemento removido, ou `undefined` se o array estiver vazio
+
+## Exemplos
+
+### Shift Básico
+
+```javascript
+// Criar um array
+await db.set('fila', ['primeiro', 'segundo', 'terceiro']);
+
+// Remover primeiro elemento
+const primeiroElemento = await db.shift('fila');
+console.log(primeiroElemento); // 'primeiro'
+
+// Verificar array restante
+const fila = await db.get('fila');
+console.log(fila); // ['segundo', 'terceiro']
+```
+
+### Shift de Array Vazio
+
+```javascript
+await db.set('listaVazia', []);
+
+const elemento = await db.shift('listaVazia');
+console.log(elemento); // undefined
+
+// Array continua vazio
+const lista = await db.get('listaVazia');
+console.log(lista); // []
+```
+
+### Shift com Notação de Ponto
+
+```javascript
+await db.set('pedido', {
+    id: '12345',
+    itens: ['produto1', 'produto2', 'produto3'],
+    status: 'processando'
+});
+
+// Processar primeiro item
+const proximoItem = await db.shift('pedido.itens');
+console.log(`Processando: ${proximoItem}`); // 'produto1'
+
+const pedido = await db.get('pedido');
+console.log(pedido.itens); // ['produto2', 'produto3']
+```
+
+### Sistema de Fila (Queue - FIFO)
+
+```javascript
+class Fila {
+    constructor(db, chave) {
+        this.db = db;
+        this.chave = chave;
+    }
+    
+    // Adicionar ao final da fila
+    async enqueue(elemento) {
+        return await this.db.push(this.chave, elemento);
+    }
+    
+    // Remover do início da fila
+    async dequeue() {
+        return await this.db.shift(this.chave);
+    }
+    
+    // Ver próximo elemento sem remover
+    async peek() {
+        const array = await this.db.get(this.chave) || [];
+        return array[0];
+    }
+    
+    // Verificar se fila está vazia
+    async isEmpty() {
+        const array = await this.db.get(this.chave) || [];
+        return array.length === 0;
+    }
+    
+    // Tamanho da fila
+    async size() {
+        const array = await this.db.get(this.chave) || [];
+        return array.length;
+    }
+}
+
+// Uso da fila
+const fila = new Fila(db, 'minhaFila');
+
+await fila.enqueue('tarefa1');
+await fila.enqueue('tarefa2');
+await fila.enqueue('tarefa3');
+
+console.log(await fila.dequeue()); // 'tarefa1'
+console.log(await fila.dequeue()); // 'tarefa2'
+console.log(await fila.peek());    // 'tarefa3'
+console.log(await fila.size());    // 1
+```
+
+### Processador de Mensagens
+
+```javascript
+class ProcessadorMensagens {
+    constructor(db) {
+        this.db = db;
+        this.processando = false;
+    }
+    
+    async adicionarMensagem(mensagem) {
+        await this.db.push('filaMensagens', {
+            id: Date.now(),
+            conteudo: mensagem,
+            timestamp: new Date(),
+            tentativas: 0
+        });
+        
+        // Iniciar processamento se não estiver rodando
+        if (!this.processando) {
+            this.iniciarProcessamento();
+        }
+    }
+    
+    async iniciarProcessamento() {
+        this.processando = true;
+        
+        while (true) {
+            const mensagem = await this.db.shift('filaMensagens');
+            
+            if (!mensagem) {
+                console.log('Fila vazia, parando processamento');
+                break;
+            }
+            
+            try {
+                await this.processarMensagem(mensagem);
+                console.log(`Mensagem ${mensagem.id} processada com sucesso`);
+            } catch (error) {
+                console.error(`Erro ao processar mensagem ${mensagem.id}:`, error);
+                
+                // Recolocar na fila se tentativas < 3
+                mensagem.tentativas++;
+                if (mensagem.tentativas < 3) {
+                    await this.db.push('filaMensagens', mensagem);
+                } else {
+                    await this.db.push('mensagensFalharam', mensagem);
+                }
+            }
+        }
+        
+        this.processando = false;
+    }
+    
+    async processarMensagem(mensagem) {
+        // Simular processamento
+        console.log(`Processando: ${mensagem.conteudo}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+}
+
+// Uso
+const processador = new ProcessadorMensagens(db);
+
+await processador.adicionarMensagem('Primeira mensagem');
+await processador.adicionarMensagem('Segunda mensagem');
+await processador.adicionarMensagem('Terceira mensagem');
+```
+
+### Sistema de Turnos
+
+```javascript
+class SistemaTurnos {
+    constructor(db, chaveJogadores) {
+        this.db = db;
+        this.chaveJogadores = chaveJogadores;
+    }
+    
+    async adicionarJogador(jogador) {
+        await this.db.push(this.chaveJogadores, jogador);
+    }
+    
+    async proximoTurno() {
+        // Remove jogador do início
+        const jogadorAtual = await this.db.shift(this.chaveJogadores);
+        
+        if (jogadorAtual) {
+            // Recoloca no final da fila para próxima rodada
+            await this.db.push(this.chaveJogadores, jogadorAtual);
+        }
+        
+        return jogadorAtual;
+    }
+    
+    async verProximoJogador() {
+        const jogadores = await this.db.get(this.chaveJogadores) || [];
+        return jogadores[0];
+    }
+    
+    async removerJogador(nomeJogador) {
+        await this.db.pull(this.chaveJogadores, nomeJogador);
+    }
+}
+
+// Uso
+const turnos = new SistemaTurnos(db, 'jogadoresAtivos');
+
+await turnos.adicionarJogador('Alice');
+await turnos.adicionarJogador('Bob');
+await turnos.adicionarJogador('Carlos');
+
+console.log(await turnos.proximoTurno()); // 'Alice'
+console.log(await turnos.proximoTurno()); // 'Bob'
+console.log(await turnos.proximoTurno()); // 'Carlos'
+console.log(await turnos.proximoTurno()); // 'Alice' (volta para o início)
+```
+
+### Buffer Circular
+
+```javascript
+class BufferCircular {
+    constructor(db, chave, tamanhoMaximo) {
+        this.db = db;
+        this.chave = chave;
+        this.tamanhoMaximo = tamanhoMaximo;
+    }
+    
+    async adicionar(elemento) {
+        // Adicionar ao final
+        await this.db.push(this.chave, elemento);
+        
+        // Verificar se excedeu tamanho máximo
+        const buffer = await this.db.get(this.chave) || [];
+        
+        if (buffer.length > this.tamanhoMaximo) {
+            // Remove do início se exceder
+            await this.db.shift(this.chave);
+        }
+        
+        return await this.db.get(this.chave);
+    }
+    
+    async obterMaisAntigo() {
+        return await this.db.shift(this.chave);
+    }
+    
+    async obterTodos() {
+        return await this.db.get(this.chave) || [];
+    }
+}
+
+// Uso para log com limite
+const logBuffer = new BufferCircular(db, 'logsRecentes', 100);
+
+await logBuffer.adicionar({ nivel: 'INFO', mensagem: 'Sistema iniciado', timestamp: new Date() });
+await logBuffer.adicionar({ nivel: 'WARN', mensagem: 'Memória baixa', timestamp: new Date() });
+// ... mais logs
+
+// Sempre mantém apenas os 100 logs mais recentes
+```
+
+## Casos de Uso
+
+- Implementação de filas (FIFO)
+- Processamento de mensagens em ordem
+- Sistemas de turnos
+- Buffers circulares
+- Remoção de elementos mais antigos
+
+## Notas
+
+- Modifica o array original
+- Retorna `undefined` se o array estiver vazio
+- Não gera erro em arrays vazios
+- Equivale ao `Array.prototype.shift()` do JavaScript
+- Reordena os índices dos elementos restantes
+
+## Comparação com Outros Métodos
+
+```javascript
+// shift() - remove do início (FIFO)
+await db.set('lista', [1, 2, 3]);
+await db.shift('lista'); // Remove 1, restam [2, 3]
+
+// pop() - remove do final (LIFO)
+await db.set('lista', [1, 2, 3]);
+await db.pop('lista'); // Remove 3, restam [1, 2]
+
+// unshift() - adiciona no início
+await db.set('lista', [2, 3]);
+await db.unshift('lista', 1); // Resultado: [1, 2, 3]
+
+// push() - adiciona no final
+await db.set('lista', [1, 2]);
+await db.push('lista', 3); // Resultado: [1, 2, 3]
+```
+
+## Performance
+
+- ⚠️ `shift()` é mais lento que `pop()` pois precisa reordenar elementos
+- Para filas grandes, considere usar estruturas especializadas
+- Para melhor performance com muitas operações, use arrays menores

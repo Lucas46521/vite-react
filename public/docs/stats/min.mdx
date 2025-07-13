@@ -1,0 +1,313 @@
+
+# min()
+
+Encontra o menor valor numérico em uma propriedade específica.
+
+## Sintaxe
+
+```javascript
+await db.min(field)
+```
+
+## Parâmetros
+
+- `field` (string): Nome da propriedade para encontrar o valor mínimo
+
+## Retorno
+
+Retorna o menor valor numérico encontrado, ou `null` se nenhum valor for encontrado.
+
+## Exemplos
+
+### Menor Idade
+
+```javascript
+const funcionarios = [
+  { nome: 'João', idade: 25, salario: 5000 },
+  { nome: 'Maria', idade: 32, salario: 7000 },
+  { nome: 'Pedro', idade: 28, salario: 6000 },
+  { nome: 'Ana', idade: 35, salario: 8000 }
+];
+
+await db.set('funcionarios', funcionarios);
+
+// Menor idade
+const menorIdade = await db.min('idade');
+console.log(menorIdade); // 25
+
+// Menor salário
+const menorSalario = await db.min('salario');
+console.log(menorSalario); // 5000
+```
+
+### Menor Preço de Produtos
+
+```javascript
+const produtos = [
+  { nome: 'Laptop', preco: 2500.00, estoque: 5 },
+  { nome: 'Mouse', preco: 50.00, estoque: 100 },
+  { nome: 'Teclado', preco: 150.00, estoque: 20 },
+  { nome: 'Monitor', preco: 800.00, estoque: 8 }
+];
+
+await db.set('produtos', produtos);
+
+// Menor preço
+const menorPreco = await db.min('preco');
+console.log(`Produto mais barato: R$ ${menorPreco}`); // R$ 50
+
+// Menor estoque
+const menorEstoque = await db.min('estoque');
+console.log(`Menor estoque: ${menorEstoque} unidades`); // 5 unidades
+```
+
+### Menor Nota da Turma
+
+```javascript
+const estudantes = [
+  { nome: 'João', nota_final: 8.5, faltas: 2 },
+  { nome: 'Maria', nota_final: 9.2, faltas: 0 },
+  { nome: 'Pedro', nota_final: 6.8, faltas: 5 },
+  { nome: 'Ana', nota_final: 7.9, faltas: 1 }
+];
+
+await db.set('estudantes', estudantes);
+
+// Menor nota da turma
+const menorNota = await db.min('nota_final');
+console.log(`Menor nota: ${menorNota}`); // 6.8
+
+// Menor número de faltas
+const menorFaltas = await db.min('faltas');
+console.log(`Menor faltas: ${menorFaltas}`); // 0
+```
+
+### Menor Tempo de Resposta
+
+```javascript
+const metricas_api = [
+  { endpoint: '/users', response_time: 120, status_code: 200 },
+  { endpoint: '/products', response_time: 85, status_code: 200 },
+  { endpoint: '/orders', response_time: 200, status_code: 500 },
+  { endpoint: '/auth', response_time: 45, status_code: 200 }
+];
+
+await db.set('metricas_api', metricas_api);
+
+// Menor tempo de resposta
+const menorTempo = await db.min('response_time');
+console.log(`Menor tempo de resposta: ${menorTempo}ms`); // 45ms
+```
+
+### Menor Venda do Mês
+
+```javascript
+const vendas_mensais = [
+  { vendedor: 'Carlos', janeiro: 15000, fevereiro: 18000 },
+  { vendedor: 'Ana', janeiro: 22000, fevereiro: 20000 },
+  { vendedor: 'Bruno', janeiro: 12000, fevereiro: 16000 },
+  { vendedor: 'Diana', janeiro: 19000, fevereiro: 21000 }
+];
+
+await db.set('vendas_mensais', vendas_mensais);
+
+// Menor venda em janeiro
+const menorJaneiro = await db.min('janeiro');
+console.log(`Menor venda em janeiro: R$ ${menorJaneiro}`); // R$ 12000
+
+// Menor venda em fevereiro
+const menorFevereiro = await db.min('fevereiro');
+console.log(`Menor venda em fevereiro: R$ ${menorFevereiro}`); // R$ 16000
+```
+
+### Encontrar Produto com Menor Valor
+
+```javascript
+// Função para encontrar o registro com o valor mínimo
+async function encontrarMinimo(chave, campo) {
+  const dados = await db.get(chave);
+  const minimo = await db.min(campo);
+  
+  if (minimo === null) return null;
+  
+  return dados.find(item => item[campo] === minimo);
+}
+
+// Produto mais barato
+const produtoMaisBarato = await encontrarMinimo('produtos', 'preco');
+console.log(`Produto mais barato: ${produtoMaisBarato.nome} - R$ ${produtoMaisBarato.preco}`);
+
+// Funcionário mais jovem
+const funcionarioMaisJovem = await encontrarMinimo('funcionarios', 'idade');
+console.log(`Funcionário mais jovem: ${funcionarioMaisJovem.nome} (${funcionarioMaisJovem.idade} anos)`);
+```
+
+### Monitoramento de Sistema
+
+```javascript
+const monitoramento = [
+  { timestamp: '2024-01-01 10:00', cpu: 45.2, memoria: 62.1, disco: 78.5 },
+  { timestamp: '2024-01-01 11:00', cpu: 52.8, memoria: 58.4, disco: 79.1 },
+  { timestamp: '2024-01-01 12:00', cpu: 38.1, memoria: 65.3, disco: 77.8 },
+  { timestamp: '2024-01-01 13:00', cpu: 41.5, memoria: 59.7, disco: 80.2 }
+];
+
+await db.set('monitoramento', monitoramento);
+
+// Menores valores de cada métrica
+const menorCPU = await db.min('cpu');
+const menorMemoria = await db.min('memoria');
+const menorDisco = await db.min('disco');
+
+console.log('Menores valores registrados:');
+console.log(`CPU: ${menorCPU}%`);
+console.log(`Memória: ${menorMemoria}%`);
+console.log(`Disco: ${menorDisco}%`);
+```
+
+### Análise de Performance
+
+```javascript
+const testes_performance = [
+  { navegador: 'Chrome', load_time: 1.2, memory_usage: 150 },
+  { navegador: 'Firefox', load_time: 1.8, memory_usage: 120 },
+  { navegador: 'Safari', load_time: 1.1, memory_usage: 110 },
+  { navegador: 'Edge', load_time: 1.5, memory_usage: 140 }
+];
+
+await db.set('testes_performance', testes_performance);
+
+// Melhor performance (menor tempo)
+const melhorTempo = await db.min('load_time');
+console.log(`Melhor tempo de carregamento: ${melhorTempo}s`);
+
+// Menor uso de memória
+const menorMemoria = await db.min('memory_usage');
+console.log(`Menor uso de memória: ${menorMemoria}MB`);
+
+// Navegador com melhor performance geral
+const navegadorMelhorTempo = await encontrarMinimo('testes_performance', 'load_time');
+const navegadorMenorMemoria = await encontrarMinimo('testes_performance', 'memory_usage');
+
+console.log(`Melhor tempo: ${navegadorMelhorTempo.navegador}`);
+console.log(`Menor memória: ${navegadorMenorMemoria.navegador}`);
+```
+
+### Função Utilitária para Múltiplos Mínimos
+
+```javascript
+// Função para calcular múltiplos mínimos
+async function multiplosMinimos(chave, campos) {
+  const resultados = {};
+  
+  for (const campo of campos) {
+    resultados[campo] = await db.min(campo);
+  }
+  
+  return resultados;
+}
+
+// Exemplo de uso
+const minimos = await multiplosMinimos('produtos', ['preco', 'estoque']);
+console.log(minimos); // { preco: 50, estoque: 5 }
+
+// Função para mínimo com filtro
+async function minimoComFiltro(chave, campo, filtro) {
+  const dados = await db.get(chave);
+  const dadosFiltrados = dados.filter(filtro);
+  
+  if (dadosFiltrados.length === 0) return null;
+  
+  const valores = dadosFiltrados
+    .map(item => item[campo])
+    .filter(v => typeof v === 'number');
+  
+  return valores.length > 0 ? Math.min(...valores) : null;
+}
+
+// Menor salário de funcionários seniores (>30 anos)
+const menorSalarioSenior = await minimoComFiltro('funcionarios', 'salario',
+  funcionario => funcionario.idade > 30
+);
+
+console.log(`Menor salário sênior: R$ ${menorSalarioSenior}`);
+```
+
+### Alertas Baseados em Mínimos
+
+```javascript
+// Função para alertas de estoque baixo
+async function alertasEstoque() {
+  const estoqueMinimo = await db.min('estoque');
+  const produtoEstoqueBaixo = await encontrarMinimo('produtos', 'estoque');
+  
+  const alertas = [];
+  
+  if (estoqueMinimo <= 10) {
+    alertas.push({
+      tipo: 'ESTOQUE_CRÍTICO',
+      produto: produtoEstoqueBaixo.nome,
+      quantidade: estoqueMinimo,
+      acao: 'Reposição urgente necessária'
+    });
+  }
+  
+  return alertas;
+}
+
+// Função para alertas de performance
+async function alertasPerformance() {
+  const menorCPU = await db.min('cpu');
+  const menorMemoria = await db.min('memoria');
+  
+  const alertas = [];
+  
+  if (menorCPU < 20) {
+    alertas.push({
+      tipo: 'CPU_BAIXA',
+      valor: menorCPU,
+      observacao: 'Sistema pode estar subutilizado'
+    });
+  }
+  
+  return alertas;
+}
+
+const alertasEst = await alertasEstoque();
+const alertasPerf = await alertasPerformance();
+```
+
+### Relatório de Valores Mínimos
+
+```javascript
+// Função para relatório completo de mínimos
+async function relatorioMinimos(chave, campos) {
+  const relatorio = {};
+  
+  for (const campo of campos) {
+    const minimo = await db.min(campo);
+    const registro = await encontrarMinimo(chave, campo);
+    
+    relatorio[campo] = {
+      valor: minimo,
+      registro: registro,
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  return relatorio;
+}
+
+const relatorio = await relatorioMinimos('funcionarios', ['idade', 'salario']);
+console.log('Relatório de Mínimos:', relatorio);
+```
+
+## Notas
+
+- Ignora valores não numéricos automaticamente
+- Retorna `null` se nenhum valor numérico for encontrado
+- Se o campo não existir nos registros, esses registros são ignorados
+- Para arrays, encontra o mínimo da propriedade especificada
+- Se a chave não existir, retorna `null`
+- Funciona com números inteiros e decimais
+- Para datas, converta para timestamp antes de usar

@@ -1,0 +1,124 @@
+
+# Memory Driver
+
+O Memory Driver armazena dados apenas na memória RAM, ideal para testes, cache temporário e aplicações que não precisam de persistência.
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    driver: 'memory',
+    maxSize: 1000,
+    ttl: 300000 // 5 minutos
+});
+
+await db.init();
+```
+
+## Opções Específicas
+
+### `maxSize`
+- **Tipo**: `number`
+- **Padrão**: `Infinity`
+- **Descrição**: Número máximo de entradas
+
+### `ttl`
+- **Tipo**: `number`
+- **Padrão**: `undefined`
+- **Descrição**: Time-to-live em milissegundos
+
+### `cleanupInterval`
+- **Tipo**: `number`
+- **Padrão**: `60000` (1 minuto)
+- **Descrição**: Intervalo de limpeza de dados expirados
+
+## Características
+
+### ✅ **Vantagens**
+- ⚡ **Ultra Rápido**: Operações em memória
+- 🧪 **Ideal para Testes**: Não persiste dados
+- 💾 **Cache**: Excelente para cache temporário
+- 🔧 **Simples**: Zero configuração
+
+### ⚠️ **Limitações**
+- 🔄 **Não Persiste**: Dados perdidos ao reiniciar
+- 💾 **Limitado pela RAM**: Consumo de memória
+- 🕐 **TTL**: Dados podem expirar
+
+## Exemplo de Uso
+
+```javascript
+// Configuração para cache
+const cache = new HelperDB({
+    driver: 'memory',
+    maxSize: 1000,
+    ttl: 300000 // 5 minutos
+});
+
+await cache.init();
+
+// Cache de dados
+await cache.set('session:abc123', {
+    userId: 1,
+    username: 'user1',
+    loginTime: Date.now()
+});
+
+// Verificar se ainda existe
+const session = await cache.get('session:abc123');
+if (session) {
+    console.log('Sessão ativa:', session);
+} else {
+    console.log('Sessão expirada');
+}
+
+// Para testes
+const testDb = new HelperDB({ driver: 'memory' });
+await testDb.init();
+
+// Dados de teste
+await testDb.set('test:1', { value: 'test' });
+const result = await testDb.get('test:1');
+console.log(result); // { value: 'test' }
+```
+
+## Casos de Uso
+
+### 🧪 **Testes Unitários**
+```javascript
+// setup.js
+const testDb = new HelperDB({ driver: 'memory' });
+global.testDb = testDb;
+
+// test.js
+beforeEach(async () => {
+    await testDb.clear(); // Limpar dados entre testes
+});
+```
+
+### 💾 **Cache de Aplicação**
+```javascript
+const cache = new HelperDB({
+    driver: 'memory',
+    ttl: 600000, // 10 minutos
+    maxSize: 5000
+});
+
+// Cache de dados de API
+async function getCachedData(key) {
+    let data = await cache.get(key);
+    if (!data) {
+        data = await fetchFromAPI(key);
+        await cache.set(key, data);
+    }
+    return data;
+}
+```
+
+## Performance
+
+- **Leitura**: Extremamente rápida
+- **Escrita**: Extremamente rápida
+- **Limitação**: Apenas pela RAM disponível

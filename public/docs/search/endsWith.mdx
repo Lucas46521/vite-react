@@ -1,0 +1,180 @@
+
+# endsWith()
+
+Filtra registros onde as chaves terminam com um sufixo específico.
+
+## Sintaxe
+
+```javascript
+await db.endsWith(suffix)
+```
+
+## Parâmetros
+
+- `suffix` (string): Sufixo que as chaves devem ter
+
+## Retorno
+
+Retorna um objeto com as chaves que terminam com o sufixo especificado.
+
+## Exemplos
+
+### Uso Básico
+
+```javascript
+// Definir alguns dados
+await db.set('user_profile', { nome: 'João', bio: 'Desenvolvedor' });
+await db.set('user_settings', { theme: 'dark', lang: 'pt' });
+await db.set('admin_profile', { nome: 'Admin', role: 'admin' });
+await db.set('guest_profile', { nome: 'Visitante', temp: true });
+
+// Buscar todas as chaves que terminam com '_profile'
+const perfis = await db.endsWith('_profile');
+console.log(perfis);
+// {
+//   'user_profile': { nome: 'João', bio: 'Desenvolvedor' },
+//   'admin_profile': { nome: 'Admin', role: 'admin' },
+//   'guest_profile': { nome: 'Visitante', temp: true }
+// }
+```
+
+### Filtrando por Tipo de Arquivo
+
+```javascript
+await db.set('document.pdf', { size: 1024, type: 'application/pdf' });
+await db.set('image.jpg', { size: 512, type: 'image/jpeg' });
+await db.set('image.png', { size: 256, type: 'image/png' });
+await db.set('video.mp4', { size: 2048, type: 'video/mp4' });
+await db.set('audio.mp3', { size: 128, type: 'audio/mpeg' });
+
+// Buscar todas as imagens
+const imagens = await db.endsWith('.jpg');
+const imagensPng = await db.endsWith('.png');
+
+// Combinar resultados
+const todasImagens = { ...imagens, ...imagensPng };
+console.log('Imagens encontradas:', Object.keys(todasImagens));
+```
+
+### Sistema de Configurações
+
+```javascript
+await db.set('database_config', { host: 'localhost', port: 3306 });
+await db.set('email_config', { smtp: 'smtp.gmail.com', port: 587 });
+await db.set('redis_config', { host: 'localhost', port: 6379 });
+await db.set('app_setting', { debug: true, version: '1.0.0' });
+await db.set('user_setting', { notifications: true, theme: 'dark' });
+
+// Buscar todas as configurações
+const configuracoes = await db.endsWith('_config');
+console.log('Configurações:', Object.keys(configuracoes));
+// ['database_config', 'email_config', 'redis_config']
+
+// Buscar todas as configurações de usuário
+const settings = await db.endsWith('_setting');
+console.log('Settings:', Object.keys(settings));
+// ['app_setting', 'user_setting']
+```
+
+### Versionamento de Dados
+
+```javascript
+await db.set('user:123:v1', { nome: 'João', idade: 25 });
+await db.set('user:123:v2', { nome: 'João Silva', idade: 26 });
+await db.set('user:123:v3', { nome: 'João Silva', idade: 26, email: 'joao@email.com' });
+await db.set('post:456:v1', { titulo: 'Meu Post', conteudo: 'Conteúdo inicial' });
+await db.set('post:456:v2', { titulo: 'Meu Post Atualizado', conteudo: 'Conteúdo revisado' });
+
+// Buscar todas as versões 1
+const versao1 = await db.endsWith(':v1');
+console.log('Versão 1:', Object.keys(versao1));
+
+// Buscar versão mais recente (v3)
+const versao3 = await db.endsWith(':v3');
+console.log('Versão 3:', Object.keys(versao3));
+```
+
+### Logs por Data
+
+```javascript
+await db.set('error_2024-01-15', { count: 5, messages: ['Error 1', 'Error 2'] });
+await db.set('warning_2024-01-15', { count: 12, messages: ['Warning 1'] });
+await db.set('info_2024-01-15', { count: 100, messages: ['Info 1'] });
+await db.set('error_2024-01-16', { count: 2, messages: ['Error 3'] });
+
+// Buscar logs de uma data específica
+const logsHoje = await db.endsWith('_2024-01-15');
+console.log('Logs de hoje:', Object.keys(logsHoje));
+// ['error_2024-01-15', 'warning_2024-01-15', 'info_2024-01-15']
+
+// Buscar apenas erros por data
+const errosOntem = await db.endsWith('_2024-01-16');
+const erros = Object.keys(errosOntem).filter(key => key.startsWith('error_'));
+```
+
+### Estados de Processo
+
+```javascript
+await db.set('task:1:pending', { created: Date.now(), priority: 'high' });
+await db.set('task:2:running', { started: Date.now(), progress: 0.5 });
+await db.set('task:3:completed', { finished: Date.now(), result: 'success' });
+await db.set('task:4:failed', { error: 'Connection timeout' });
+
+// Buscar tarefas por estado
+const pendentes = await db.endsWith(':pending');
+const executando = await db.endsWith(':running');
+const completadas = await db.endsWith(':completed');
+const falharam = await db.endsWith(':failed');
+
+console.log('Relatório de tarefas:');
+console.log(`Pendentes: ${Object.keys(pendentes).length}`);
+console.log(`Executando: ${Object.keys(executando).length}`);
+console.log(`Completadas: ${Object.keys(completadas).length}`);
+console.log(`Falharam: ${Object.keys(falharam).length}`);
+```
+
+### Backup e Cleanup
+
+```javascript
+// Função para fazer backup de configurações
+async function backupConfiguracoes() {
+  const configs = await db.endsWith('_config');
+  const backup = {
+    timestamp: Date.now(),
+    data: configs
+  };
+  
+  await db.set(`backup_config_${Date.now()}`, backup);
+  return backup;
+}
+
+// Função para limpar logs antigos
+async function limparLogsAntigos(data) {
+  const logsData = await db.endsWith(`_${data}`);
+  
+  for (const key of Object.keys(logsData)) {
+    await db.delete(key);
+    console.log(`Log removido: ${key}`);
+  }
+  
+  return Object.keys(logsData).length;
+}
+
+// Função para obter estatísticas por sufixo
+async function obterEstatisticasPorSufixo(suffix) {
+  const items = await db.endsWith(suffix);
+  return {
+    total: Object.keys(items).length,
+    chaves: Object.keys(items),
+    ultimaModificacao: Math.max(...Object.values(items).map(v => v.timestamp || 0))
+  };
+}
+```
+
+## Notas
+
+- A busca é case-sensitive (diferencia maiúsculas de minúsculas)
+- Retorna um objeto vazio se nenhuma chave for encontrada
+- Útil para filtrar dados por tipo, extensão ou estado
+- Pode ser combinado com `startsWith()` para buscas mais específicas
+- Eficiente para organizar dados com sufixos padronizados

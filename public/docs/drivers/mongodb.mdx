@@ -1,0 +1,236 @@
+
+---
+title: MongoDB Driver
+description: Configuração e uso do driver MongoDB
+---
+
+# MongoDB Driver
+
+Driver para conexão com bancos de dados MongoDB, ideal para dados não-relacionais e estruturas flexíveis.
+
+## Instalação
+
+```bash
+npm install mongodb
+```
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helperdb');
+
+const db = new HelperDB({
+  driver: 'mongodb',
+  mongodb: {
+    url: 'mongodb://localhost:27017',
+    database: 'helperdb',
+    collection: 'data',
+    options: {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      maxIdleTimeMS: 30000
+    }
+  }
+});
+
+await db.init();
+```
+
+## Opções de Configuração
+
+### Configuração Básica
+```javascript
+{
+  url: 'mongodb://localhost:27017',
+  database: 'helperdb',
+  collection: 'data'
+}
+```
+
+### Configuração com Autenticação
+```javascript
+{
+  url: 'mongodb://username:password@localhost:27017/helperdb?authSource=admin',
+  database: 'helperdb',
+  collection: 'data',
+  options: {
+    authSource: 'admin',
+    authMechanism: 'SCRAM-SHA-256'
+  }
+}
+```
+
+### MongoDB Atlas (Cloud)
+```javascript
+{
+  url: 'mongodb+srv://username:password@cluster.mongodb.net/',
+  database: 'helperdb',
+  collection: 'data',
+  options: {
+    retryWrites: true,
+    w: 'majority',
+    readPreference: 'primary'
+  }
+}
+```
+
+### Replica Set
+```javascript
+{
+  url: 'mongodb://host1:27017,host2:27017,host3:27017/helperdb?replicaSet=myReplSet',
+  database: 'helperdb',
+  collection: 'data',
+  options: {
+    readPreference: 'secondaryPreferred',
+    maxPoolSize: 20,
+    minPoolSize: 5,
+    w: 'majority',
+    wtimeoutMS: 5000
+  }
+}
+```
+
+## Características
+
+### ✅ Vantagens
+- Schema flexível e dinâmico
+- Consultas complexas nativas
+- Indexação automática otimizada
+- Sharding horizontal
+- Agregações poderosas
+- Suporte nativo a arrays e objetos
+
+### 🚀 Recursos Especiais
+- GridFS para arquivos grandes
+- Change streams para eventos em tempo real
+- Transações multi-documento
+- Geo-consultas
+- Text search nativo
+
+## Exemplos de Uso
+
+### Dados Estruturados Complexos
+```javascript
+await db.set('user:1', {
+  name: 'João',
+  profile: {
+    bio: 'Desenvolvedor Full Stack',
+    skills: ['JavaScript', 'Python', 'MongoDB'],
+    social: {
+      github: 'joao-dev',
+      linkedin: 'joao-silva'
+    }
+  },
+  posts: [
+    { title: 'Primeiro post', date: new Date(), tags: ['tech'] },
+    { title: 'Segundo post', date: new Date(), tags: ['mongodb', 'database'] }
+  ],
+  location: {
+    type: 'Point',
+    coordinates: [-23.5505, -46.6333] // São Paulo
+  }
+});
+```
+
+### Busca Complexa
+```javascript
+// Buscar usuários próximos a uma localização
+const nearbyUsers = await db.search({
+  'location': {
+    $near: {
+      $geometry: { type: 'Point', coordinates: [-23.5505, -46.6333] },
+      $maxDistance: 1000 // 1km
+    }
+  }
+});
+
+// Buscar por tags em posts
+const techPosts = await db.search({
+  'posts.tags': { $in: ['tech', 'javascript'] }
+});
+```
+
+### Agregações
+```javascript
+// Estatísticas avançadas usando pipeline do MongoDB
+const userStats = await db.aggregate([
+  { $match: { 'profile.skills': { $exists: true } } },
+  { $unwind: '$profile.skills' },
+  { $group: { 
+    _id: '$profile.skills', 
+    count: { $sum: 1 },
+    users: { $push: '$name' }
+  }},
+  { $sort: { count: -1 } },
+  { $limit: 10 }
+]);
+```
+
+## Configuração de Produção
+
+```javascript
+const db = new HelperDB({
+  driver: 'mongodb',
+  mongodb: {
+    url: process.env.MONGODB_URL,
+    database: process.env.MONGODB_DATABASE,
+    collection: 'data',
+    options: {
+      maxPoolSize: 50,
+      minPoolSize: 5,
+      maxIdleTimeMS: 30000,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4, // Use IPv4
+      
+      // Configurações de produção
+      retryWrites: true,
+      w: 'majority',
+      readPreference: 'primary',
+      readConcern: { level: 'majority' },
+      
+      // SSL/TLS
+      ssl: true,
+      sslValidate: true
+    }
+  }
+});
+```
+
+## Índices Automáticos
+
+O driver cria automaticamente índices otimizados:
+
+```javascript
+// Índices criados automaticamente
+{
+  "_id": 1,           // Índice padrão
+  "key": 1,           // Para busca por chave
+  "key_1": "text",    // Para text search
+  "createdAt": 1,     // Para queries temporais
+  "updatedAt": 1      // Para ordenação por atualização
+}
+```
+
+## Monitoramento
+
+```javascript
+// Verificar saúde da conexão MongoDB
+const health = await db.ping();
+console.log(`MongoDB conectado - Latência: ${health.latency}ms`);
+
+// Estatísticas específicas do MongoDB
+const stats = await db.mongoStats();
+console.log('Coleções:', stats.collections);
+console.log('Tamanho do banco:', stats.dataSize);
+console.log('Índices:', stats.indexes);
+```
+
+## Casos de Uso Ideais
+
+- Aplicações com dados semi-estruturados
+- Sistemas de conteúdo e CMS
+- IoT e telemetria
+- Análise de dados e big data
+- Aplicações com consultas geo-espaciais
+- Sistemas com schema evolutivo

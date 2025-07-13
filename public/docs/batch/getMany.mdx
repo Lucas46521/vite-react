@@ -1,0 +1,82 @@
+
+---
+title: getMany()
+description: Obtém múltiplos valores em uma única operação
+---
+
+# getMany()
+
+Obtém múltiplos valores através de suas chaves em uma única operação otimizada.
+
+## Sintaxe
+
+```typescript
+await db.getMany(keys: string[]): Promise<Record<string, any>>
+```
+
+## Parâmetros
+
+- `keys`: Array de chaves para buscar
+
+## Retorno
+
+Objeto com as chaves encontradas e seus valores.
+
+## Exemplos
+
+### Busca Básica
+```javascript
+await db.setMany({
+  'user:1': { name: 'João', age: 25 },
+  'user:2': { name: 'Maria', age: 30 },
+  'user:3': { name: 'Pedro', age: 35 }
+});
+
+const users = await db.getMany(['user:1', 'user:2', 'user:3']);
+console.log(users);
+// {
+//   'user:1': { name: 'João', age: 25 },
+//   'user:2': { name: 'Maria', age: 30 },
+//   'user:3': { name: 'Pedro', age: 35 }
+// }
+```
+
+### Busca com Chaves Inexistentes
+```javascript
+const data = await db.getMany(['existing', 'nonexistent', 'another']);
+console.log(data);
+// { 'existing': 'value' } // Apenas chaves existentes
+```
+
+### Configurações de Sistema
+```javascript
+const configs = await db.getMany([
+  'app:version',
+  'app:debug',
+  'app:maxUsers',
+  'app:theme'
+]);
+
+console.log(configs);
+// {
+//   'app:version': '1.0.0',
+//   'app:debug': false,
+//   'app:maxUsers': 1000,
+//   'app:theme': 'dark'
+// }
+```
+
+## Performance
+
+Muito mais eficiente que múltiplas chamadas `get()` individuais.
+
+```javascript
+// ❌ Lento
+const results = {};
+for (const key of keys) {
+  results[key] = await db.get(key);
+}
+
+// ✅ Rápido
+const results = await db.getMany(keys);
+```

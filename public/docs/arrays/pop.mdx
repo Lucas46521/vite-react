@@ -1,0 +1,347 @@
+
+# pop() - Remover do Final
+
+O método `pop()` remove e retorna o último elemento de um array. Se o array estiver vazio ou a chave não existir, retorna `undefined`.
+
+## Sintaxe
+
+```javascript
+await db.pop(key)
+```
+
+## Parâmetros
+
+- **key** (`string`): A chave do array
+
+## Retorno
+
+- **any**: O último elemento removido, ou `undefined` se vazio
+
+## Exemplos
+
+### Remoção Básica
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Criar array
+await db.set('tasks', ['task1', 'task2', 'task3']);
+
+// Remover último elemento
+const lastTask = await db.pop('tasks');
+console.log(lastTask); // 'task3'
+
+// Verificar array atual
+const remainingTasks = await db.get('tasks');
+console.log(remainingTasks); // ['task1', 'task2']
+```
+
+### Array Vazio
+```javascript
+// Tentar remover de array vazio
+await db.set('empty', []);
+const result = await db.pop('empty');
+console.log(result); // undefined
+
+// Tentar remover de chave inexistente
+const result2 = await db.pop('nonexistent');
+console.log(result2); // undefined
+```
+
+### Processamento Sequencial
+```javascript
+// Processar todos os itens de uma fila
+await db.set('queue', ['item1', 'item2', 'item3']);
+
+let item;
+while ((item = await db.pop('queue')) !== undefined) {
+    console.log(`Processando: ${item}`);
+    // Processar item...
+}
+```
+
+### Objetos Complexos
+```javascript
+// Array de objetos
+await db.set('notifications', [
+    { id: 1, message: 'Bem-vindo!', read: false },
+    { id: 2, message: 'Nova atualização', read: false },
+    { id: 3, message: 'Lembrete', read: true }
+]);
+
+// Remover última notificação
+const lastNotification = await db.pop('notifications');
+console.log(lastNotification); // { id: 3, message: 'Lembrete', read: true }
+```
+
+## Casos de Uso
+
+### 📚 **Sistema de Pilha (Stack)**
+```javascript
+class Stack {
+    constructor(db, key) {
+        this.db = db;
+        this.key = key;
+    }
+    
+    async push(item) {
+        return await this.db.push(this.key, item);
+    }
+    
+    async pop() {
+        return await this.db.pop(this.key);
+    }
+    
+    async peek() {
+        const items = await this.db.get(this.key) || [];
+        return items[items.length - 1];
+    }
+    
+    async isEmpty() {
+        const items = await this.db.get(this.key) || [];
+        return items.length === 0;
+    }
+    
+    async size() {
+        const items = await this.db.get(this.key) || [];
+        return items.length;
+    }
+}
+
+// Uso
+const stack = new Stack(db, 'my_stack');
+await stack.push('item1');
+await stack.push('item2');
+const item = await stack.pop(); // 'item2'
+```
+
+### 🔄 **Processamento de Trabalhos**
+```javascript
+async function processJobs() {
+    const jobQueue = 'jobs:pending';
+    
+    while (true) {
+        const job = await db.pop(jobQueue);
+        
+        if (!job) {
+            console.log('Nenhum trabalho pendente');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+        }
+        
+        try {
+            console.log(`Processando trabalho: ${job.id}`);
+            
+            // Processar trabalho
+            await processJob(job);
+            
+            // Marcar como concluído
+            await db.push('jobs:completed', {
+                ...job,
+                completedAt: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            console.error(`Erro no trabalho ${job.id}:`, error);
+            
+            // Recolocar na fila ou marcar como falhou
+            if (job.retries < 3) {
+                job.retries = (job.retries || 0) + 1;
+                await db.push(jobQueue, job);
+            } else {
+                await db.push('jobs:failed', {
+                    ...job,
+                    error: error.message,
+                    failedAt: new Date().toISOString()
+                });
+            }
+        }
+    }
+}
+```
+
+### 📝 **Histórico de Ações (Undo)**
+```javascript
+class UndoManager {
+    constructor(db, userId) {
+        this.db = db;
+        this.historyKey = `user:${userId}:history`;
+        this.maxHistory = 50;
+    }
+    
+    async recordAction(action) {
+        // Adicionar ação ao histórico
+        await this.db.push(this.historyKey, {
+            ...action,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Limitar tamanho do histórico
+        const history = await this.db.get(this.historyKey) || [];
+        if (history.length > this.maxHistory) {
+            await this.db.shift(this.historyKey);
+        }
+    }
+    
+    async undo() {
+        const lastAction = await this.db.pop(this.historyKey);
+        
+        if (!lastAction) {
+            throw new Error('Nenhuma ação para desfazer');
+        }
+        
+        // Executar ação reversa
+        await this.executeReverse(lastAction);
+        
+        return lastAction;
+    }
+    
+    async executeReverse(action) {
+        switch (action.type) {
+            case 'set':
+                if (action.previousValue !== undefined) {
+                    await this.db.set(action.key, action.previousValue);
+                } else {
+                    await this.db.delete(action.key);
+                }
+                break;
+            
+            case 'delete':
+                await this.db.set(action.key, action.previousValue);
+                break;
+            
+            case 'push':
+                await this.db.pop(action.key);
+                break;
+            
+            case 'pop':
+                await this.db.push(action.key, action.value);
+                break;
+        }
+    }
+}
+```
+
+### 🎮 **Sistema de Movimentos**
+```javascript
+async function recordMove(gameId, move) {
+    const movesKey = `game:${gameId}:moves`;
+    
+    // Registrar movimento
+    await db.push(movesKey, {
+        ...move,
+        timestamp: new Date().toISOString(),
+        moveNumber: (await db.get(movesKey) || []).length + 1
+    });
+}
+
+async function undoMove(gameId) {
+    const movesKey = `game:${gameId}:moves`;
+    const lastMove = await db.pop(movesKey);
+    
+    if (!lastMove) {
+        throw new Error('Nenhum movimento para desfazer');
+    }
+    
+    // Reverter estado do jogo
+    await revertGameState(gameId, lastMove);
+    
+    return lastMove;
+}
+
+async function revertGameState(gameId, move) {
+    const gameKey = `game:${gameId}:state`;
+    const currentState = await db.get(gameKey);
+    
+    // Aplicar movimento reverso
+    const newState = applyReverseMove(currentState, move);
+    await db.set(gameKey, newState);
+}
+```
+
+### 📊 **Análise de Dados**
+```javascript
+async function analyzeUserActivity(userId) {
+    const activityKey = `user:${userId}:activity`;
+    const recentActivity = [];
+    
+    // Extrair últimas 10 atividades
+    for (let i = 0; i < 10; i++) {
+        const activity = await db.pop(activityKey);
+        if (!activity) break;
+        
+        recentActivity.push(activity);
+    }
+    
+    // Analisar padrões
+    const analysis = {
+        totalActivities: recentActivity.length,
+        timeSpan: getTimeSpan(recentActivity),
+        mostCommonAction: getMostCommonAction(recentActivity),
+        averageInterval: getAverageInterval(recentActivity)
+    };
+    
+    // Restaurar atividades (se necessário)
+    for (const activity of recentActivity.reverse()) {
+        await db.push(activityKey, activity);
+    }
+    
+    return analysis;
+}
+```
+
+## Performance
+
+- **Complexidade**: O(1) - Tempo constante
+- **Uso de memória**: Mínimo
+- **Operação atômica**: Segura para concorrência
+- **Ideal para**: Pilhas, filas LIFO e processamento sequencial
+
+## ⚠️ Considerações
+
+### Verificação de Tipo
+```javascript
+async function safePop(key) {
+    const current = await db.get(key);
+    
+    if (current === undefined) {
+        throw new Error('Chave não existe');
+    }
+    
+    if (!Array.isArray(current)) {
+        throw new Error('Valor não é um array');
+    }
+    
+    return await db.pop(key);
+}
+```
+
+### Operação Condicional
+```javascript
+async function conditionalPop(key, condition) {
+    const current = await db.get(key) || [];
+    
+    if (current.length === 0) {
+        return undefined;
+    }
+    
+    const lastItem = current[current.length - 1];
+    
+    if (condition && !condition(lastItem)) {
+        return undefined;
+    }
+    
+    return await db.pop(key);
+}
+
+// Uso
+const item = await conditionalPop('tasks', task => task.priority === 'high');
+```
+
+## Notas
+
+- Remove apenas o último elemento (LIFO)
+- Retorna `undefined` se array vazio ou chave inexistente
+- Operação destrutiva (modifica o array original)
+- Ideal para implementar pilhas (stacks)
+- Complementa o método `push()` para estruturas LIFO

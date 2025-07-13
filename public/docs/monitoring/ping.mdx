@@ -1,0 +1,119 @@
+
+---
+title: ping()
+description: Verifica conectividade e latência do banco
+---
+
+# ping()
+
+Verifica a conectividade com o banco de dados e mede a latência da conexão, útil para monitoramento de saúde do sistema.
+
+## Sintaxe
+
+```typescript
+await db.ping(): Promise<PingResult>
+```
+
+## Retorno
+
+```typescript
+{
+  success: boolean,
+  latency: number, // em milissegundos
+  timestamp: Date,
+  driver: string,
+  status: 'healthy' | 'degraded' | 'error'
+}
+```
+
+## Exemplos
+
+### Verificação Simples
+```javascript
+const result = await db.ping();
+
+if (result.success) {
+  console.log(`Banco conectado - Latência: ${result.latency}ms`);
+} else {
+  console.error('Banco não está respondendo');
+}
+```
+
+### Monitoramento Contínuo
+```javascript
+async function monitorDatabase() {
+  const result = await db.ping();
+  
+  console.log(`Status: ${result.status}`);
+  console.log(`Latência: ${result.latency}ms`);
+  console.log(`Driver: ${result.driver}`);
+  
+  if (result.latency > 1000) {
+    console.warn('Alta latência detectada!');
+  }
+  
+  if (!result.success) {
+    console.error('Falha na conexão com o banco!');
+    // Implementar lógica de reconexão
+  }
+}
+
+// Monitorar a cada 30 segundos
+setInterval(monitorDatabase, 30000);
+```
+
+### Health Check para API
+```javascript
+app.get('/health', async (req, res) => {
+  try {
+    const dbPing = await db.ping();
+    
+    res.json({
+      status: dbPing.success ? 'healthy' : 'unhealthy',
+      database: {
+        connected: dbPing.success,
+        latency: dbPing.latency,
+        driver: dbPing.driver,
+        timestamp: dbPing.timestamp
+      },
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      error: error.message
+    });
+  }
+});
+```
+
+### Alertas por Latência
+```javascript
+async function checkLatency() {
+  const result = await db.ping();
+  
+  if (result.latency > 500) {
+    console.warn(`⚠️  Alta latência: ${result.latency}ms`);
+  } else if (result.latency > 100) {
+    console.info(`📊 Latência moderada: ${result.latency}ms`);
+  } else {
+    console.log(`✅ Latência boa: ${result.latency}ms`);
+  }
+  
+  return result;
+}
+```
+
+## Status de Saúde
+
+- `healthy`: Latência < 100ms, sem erros
+- `degraded`: Latência 100-1000ms, funcionando com lentidão
+- `error`: Falha na conexão ou latência > 1000ms
+
+## Casos de Uso
+
+- Health checks em APIs
+- Monitoramento de infraestrutura
+- Alertas de performance
+- Dashboards de status
+- Diagnóstico de problemas de conectividade

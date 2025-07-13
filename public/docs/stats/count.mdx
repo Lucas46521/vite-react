@@ -1,0 +1,246 @@
+
+
+# count(key?)
+
+Conta o número de registros ou elementos em um array/objeto.
+
+## Sintaxe
+
+```javascript
+const total = await db.count(key)
+```
+
+## Parâmetros
+
+- `key` (string, opcional): Chave específica para contar. Se omitido, conta todos os registros
+
+## Retorno
+
+- `Promise<number>`: Número de registros ou elementos
+
+## Exemplos
+
+### Contar Todos os Registros
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Adicionar alguns dados
+await db.set('user1', { nome: 'João' });
+await db.set('user2', { nome: 'Maria' });
+await db.set('user3', { nome: 'Pedro' });
+await db.set('config', { tema: 'escuro' });
+
+// Contar todos os registros
+const total = await db.count();
+console.log(total); // 4
+```
+
+### Contar Elementos de Array
+```javascript
+await db.set('frutas', ['maçã', 'banana', 'laranja', 'uva']);
+
+const totalFrutas = await db.count('frutas');
+console.log(totalFrutas); // 4
+
+// Array vazio
+await db.set('vazio', []);
+const totalVazio = await db.count('vazio');
+console.log(totalVazio); // 0
+```
+
+### Contar Propriedades de Objeto
+```javascript
+await db.set('usuario', {
+    nome: 'João',
+    idade: 25,
+    email: 'joao@email.com',
+    ativo: true
+});
+
+const propriedades = await db.count('usuario');
+console.log(propriedades); // 4
+```
+
+### Arrays Aninhados
+```javascript
+await db.set('dados', {
+    usuarios: [
+        { nome: 'João', idade: 25 },
+        { nome: 'Maria', idade: 30 },
+        { nome: 'Pedro', idade: 28 }
+    ],
+    configuracoes: {
+        tema: 'escuro',
+        idioma: 'pt-BR'
+    }
+});
+
+// Contar usuários
+const totalUsuarios = await db.count('dados.usuarios');
+console.log(totalUsuarios); // 3
+
+// Contar configurações
+const totalConfigs = await db.count('dados.configuracoes');
+console.log(totalConfigs); // 2
+```
+
+## Casos de Uso Práticos
+
+### Dashboard de Estatísticas
+```javascript
+async function gerarDashboard() {
+    const stats = {
+        totalUsuarios: await db.count('usuarios'),
+        totalProdutos: await db.count('produtos'),
+        totalPedidos: await db.count('pedidos'),
+        totalRegistros: await db.count()
+    };
+    
+    console.log('📊 Dashboard:');
+    console.log(`👥 Usuários: ${stats.totalUsuarios}`);
+    console.log(`📦 Produtos: ${stats.totalProdutos}`);
+    console.log(`🛒 Pedidos: ${stats.totalPedidos}`);
+    console.log(`📋 Total de Registros: ${stats.totalRegistros}`);
+    
+    return stats;
+}
+
+await gerarDashboard();
+```
+
+### Paginação
+```javascript
+async function paginarUsuarios(pagina = 1, porPagina = 10) {
+    const total = await db.count('usuarios');
+    const totalPaginas = Math.ceil(total / porPagina);
+    const inicio = (pagina - 1) * porPagina;
+    
+    const usuarios = await db.get('usuarios');
+    const paginados = usuarios.slice(inicio, inicio + porPagina);
+    
+    return {
+        dados: paginados,
+        paginacao: {
+            paginaAtual: pagina,
+            porPagina,
+            total,
+            totalPaginas
+        }
+    };
+}
+
+const resultado = await paginarUsuarios(2, 5);
+console.log(resultado.paginacao);
+// { paginaAtual: 2, porPagina: 5, total: 15, totalPaginas: 3 }
+```
+
+### Validação de Limites
+```javascript
+async function adicionarItem(lista, item, limite = 100) {
+    const totalAtual = await db.count(lista);
+    
+    if (totalAtual >= limite) {
+        throw new Error(`Limite de ${limite} itens atingido`);
+    }
+    
+    await db.push(lista, item);
+    return totalAtual + 1;
+}
+
+try {
+    await adicionarItem('tarefas', { titulo: 'Nova tarefa' }, 50);
+} catch (error) {
+    console.error(error.message);
+}
+```
+
+### Monitor de Crescimento
+```javascript
+class MonitorCrescimento {
+    constructor(chave, intervalo = 60000) { // 1 minuto
+        this.chave = chave;
+        this.intervalo = intervalo;
+        this.contadorAnterior = 0;
+        this.historico = [];
+    }
+    
+    async iniciar() {
+        this.contadorAnterior = await db.count(this.chave);
+        
+        setInterval(async () => {
+            const contadorAtual = await db.count(this.chave);
+            const crescimento = contadorAtual - this.contadorAnterior;
+            
+            this.historico.push({
+                timestamp: new Date(),
+                total: contadorAtual,
+                crescimento
+            });
+            
+            if (crescimento > 0) {
+                console.log(`📈 ${this.chave}: +${crescimento} (Total: ${contadorAtual})`);
+            }
+            
+            this.contadorAnterior = contadorAtual;
+        }, this.intervalo);
+    }
+    
+    obterEstatisticas() {
+        return {
+            totalAtual: this.contadorAnterior,
+            historicoRecente: this.historico.slice(-10),
+            crescimentoMedio: this.historico.reduce((acc, h) => acc + h.crescimento, 0) / this.historico.length
+        };
+    }
+}
+
+// Monitorar crescimento de usuários
+const monitor = new MonitorCrescimento('usuarios');
+await monitor.iniciar();
+```
+
+## Performance
+
+```javascript
+// ✅ Eficiente - count direto
+const total = await db.count('lista');
+
+// ❌ Menos eficiente - buscar e contar
+const lista = await db.get('lista');
+const total = lista.length;
+
+// ✅ Para múltiplas contagens, use Promise.all
+const [usuarios, produtos, pedidos] = await Promise.all([
+    db.count('usuarios'),
+    db.count('produtos'),
+    db.count('pedidos')
+]);
+```
+
+## Tipos de Dados Suportados
+
+```javascript
+// Arrays
+await db.count('array'); // Conta elementos
+
+// Objetos
+await db.count('objeto'); // Conta propriedades
+
+// Strings
+await db.count('string'); // Retorna comprimento da string
+
+// Números/Primitivos
+await db.count('numero'); // Retorna 1 (existe) ou 0 (não existe)
+
+// Null/Undefined
+await db.count('inexistente'); // Retorna 0
+```
+
+## Veja Também
+
+- [sum](./sum.mdx) - Somar valores numéricos
+- [avg](./avg.mdx) - Calcular média
+- [aggregate](./aggregate.mdx) - Múltiplas operações estatísticas
+- [all](../basic/all.mdx) - Obter todos os dados
+

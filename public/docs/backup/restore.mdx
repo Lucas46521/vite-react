@@ -1,0 +1,93 @@
+
+---
+title: restore()
+description: Restaura dados de um backup
+---
+
+# restore()
+
+Restaura dados a partir de um arquivo de backup, substituindo os dados atuais.
+
+## Sintaxe
+
+```typescript
+await db.restore(backupPath: string, options?: RestoreOptions): Promise<RestoreResult>
+```
+
+## Parâmetros
+
+- `backupPath`: Caminho para o arquivo de backup
+- `options` (opcional): Opções de restauração
+  - `verify`: Verificar integridade antes de restaurar (padrão: true)
+  - `merge`: Mesclar com dados existentes ao invés de substituir (padrão: false)
+
+## Retorno
+
+Resultado da restauração:
+```typescript
+{
+  success: boolean,
+  recordsRestored: number,
+  timestamp: Date,
+  verified: boolean
+}
+```
+
+## Exemplos
+
+### Restauração Simples
+```javascript
+const result = await db.restore('./backups/backup-20231201.db');
+
+if (result.success) {
+  console.log(`${result.recordsRestored} registros restaurados`);
+} else {
+  console.error('Falha na restauração');
+}
+```
+
+### Restauração com Verificação
+```javascript
+const result = await db.restore('./backup.db', {
+  verify: true
+});
+
+if (result.verified) {
+  console.log('Backup verificado e restaurado com sucesso');
+} else {
+  console.warn('Backup restaurado mas não pôde ser verificado');
+}
+```
+
+### Restauração Mesclada
+```javascript
+// Mesclar backup com dados existentes
+const result = await db.restore('./backup.db', {
+  merge: true
+});
+
+console.log(`${result.recordsRestored} registros mesclados`);
+```
+
+### Restauração com Backup de Segurança
+```javascript
+// Criar backup antes de restaurar
+const currentBackup = await db.backup();
+console.log(`Backup atual criado: ${currentBackup.id}`);
+
+try {
+  const result = await db.restore('./backup.db');
+  console.log('Restauração bem-sucedida');
+} catch (error) {
+  console.error('Erro na restauração, dados originais preservados');
+  // Dados originais ainda estão seguros
+}
+```
+
+## Casos de Uso
+
+- Recuperação de desastres
+- Restauração de versões anteriores
+- Migração entre ambientes
+- Desfazer operações críticas
+- Sincronização de dados

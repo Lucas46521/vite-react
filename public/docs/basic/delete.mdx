@@ -1,0 +1,191 @@
+
+# delete() - Remover Dados
+
+O método `delete()` remove uma chave e seu valor do banco de dados.
+
+## Sintaxe
+
+```javascript
+await db.delete(key)
+```
+
+## Parâmetros
+
+- **key** (`string`): A chave a ser removida
+
+## Retorno
+
+- **boolean**: `true` se a chave foi removida, `false` se não existia
+
+## Exemplos
+
+### Remoção Básica
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Definir dados
+await db.set('user:1', { name: 'João' });
+
+// Remover dados
+const deleted = await db.delete('user:1');
+console.log(deleted); // true
+
+// Tentar remover novamente
+const deletedAgain = await db.delete('user:1');
+console.log(deletedAgain); // false
+```
+
+### Remoção Condicional
+```javascript
+// Remover apenas se existir
+async function safeDelete(key) {
+    if (await db.has(key)) {
+        await db.delete(key);
+        console.log(`${key} removido com sucesso`);
+    } else {
+        console.log(`${key} não encontrado`);
+    }
+}
+
+await safeDelete('user:999');
+```
+
+### Remoção em Lote
+```javascript
+// Remover múltiplas chaves
+const keysToDelete = ['temp:1', 'temp:2', 'temp:3'];
+const results = [];
+
+for (const key of keysToDelete) {
+    const deleted = await db.delete(key);
+    results.push({ key, deleted });
+}
+
+console.log(results);
+// [
+//   { key: 'temp:1', deleted: true },
+//   { key: 'temp:2', deleted: false },
+//   { key: 'temp:3', deleted: true }
+// ]
+```
+
+### Limpeza de Sessões Expiradas
+```javascript
+async function cleanupExpiredSessions() {
+    const sessions = await db.search('session:*');
+    let cleaned = 0;
+    
+    for (const [key, session] of sessions) {
+        if (Date.now() > session.expiresAt) {
+            await db.delete(key);
+            cleaned++;
+        }
+    }
+    
+    console.log(`${cleaned} sessões expiradas removidas`);
+}
+```
+
+## Casos de Uso
+
+### 🗑️ **Limpeza de Cache**
+```javascript
+async function clearCache(pattern) {
+    const cacheKeys = await db.search(`cache:${pattern}`);
+    
+    for (const [key] of cacheKeys) {
+        await db.delete(key);
+    }
+    
+    console.log(`Cache limpo: ${cacheKeys.length} itens removidos`);
+}
+```
+
+### 👤 **Remoção de Usuário**
+```javascript
+async function deleteUser(userId) {
+    const userKey = `user:${userId}`;
+    
+    // Verificar se usuário existe
+    if (!(await db.has(userKey))) {
+        throw new Error('Usuário não encontrado');
+    }
+    
+    // Remover dados relacionados
+    await db.delete(userKey);
+    await db.delete(`profile:${userId}`);
+    await db.delete(`settings:${userId}`);
+    
+    // Remover de listas
+    await db.pull('users:active', userId);
+    
+    return { success: true, message: 'Usuário removido completamente' };
+}
+```
+
+### 📝 **Gerenciamento de Logs**
+```javascript
+async function rotateLogs() {
+    const logs = await db.search('log:*');
+    const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    
+    for (const [key, log] of logs) {
+        if (log.timestamp < oneWeekAgo) {
+            await db.delete(key);
+        }
+    }
+}
+```
+
+### 🔄 **Transações com Rollback**
+```javascript
+async function transferWithRollback(fromId, toId, amount) {
+    const transaction = await db.transaction();
+    
+    try {
+        const fromUser = await transaction.get(`user:${fromId}`);
+        const toUser = await transaction.get(`user:${toId}`);
+        
+        // Validações
+        if (!fromUser || !toUser) {
+            throw new Error('Usuário não encontrado');
+        }
+        
+        if (fromUser.balance < amount) {
+            throw new Error('Saldo insuficiente');
+        }
+        
+        // Transferir
+        fromUser.balance -= amount;
+        toUser.balance += amount;
+        
+        await transaction.set(`user:${fromId}`, fromUser);
+        await transaction.set(`user:${toId}`, toUser);
+        
+        await transaction.commit();
+        
+        // Limpar cache após sucesso
+        await db.delete(`cache:user:${fromId}`);
+        await db.delete(`cache:user:${toId}`);
+        
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
+}
+```
+
+## Performance
+
+- **Complexidade**: O(1) - Tempo constante
+- **Uso de memória**: Libera memória ocupada pelo valor
+- **Ideal para**: Limpeza de dados temporários e manutenção
+
+## Notas
+
+- Não gera erro se a chave não existir
+- Retorna `false` se tentar deletar chave inexistente
+- Operação irreversível (use com cuidado)
+- Libera espaço no banco de dados
+- Pode ser usada em transações para rollback

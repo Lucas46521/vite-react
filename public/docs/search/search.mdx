@@ -1,0 +1,219 @@
+
+
+# search(term, property?)
+
+Realiza busca global nos dados armazenados.
+
+## Sintaxe
+
+```javascript
+const results = await db.search(term, property)
+```
+
+## Parâmetros
+
+- `term` (string): Termo a ser buscado
+- `property` (string, opcional): Propriedade específica para buscar
+
+## Retorno
+
+- `Promise<Array>`: Array de objetos com `{ key, value, score }`
+
+## Exemplos
+
+### Busca Global
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Dados de exemplo
+await db.set('user1', { nome: 'João Silva', email: 'joao@email.com' });
+await db.set('user2', { nome: 'Maria Silva', email: 'maria@email.com' });
+await db.set('user3', { nome: 'Pedro Santos', email: 'pedro@email.com' });
+
+// Buscar por "Silva"
+const resultados = await db.search('Silva');
+console.log(resultados);
+// [
+//   { key: 'user1', value: { nome: 'João Silva', email: 'joao@email.com' }, score: 0.8 },
+//   { key: 'user2', value: { nome: 'Maria Silva', email: 'maria@email.com' }, score: 0.8 }
+// ]
+```
+
+### Busca em Propriedade Específica
+```javascript
+// Buscar apenas no campo 'nome'
+const porNome = await db.search('João', 'nome');
+console.log(porNome);
+// [{ key: 'user1', value: { nome: 'João Silva', email: 'joao@email.com' }, score: 1.0 }]
+
+// Buscar apenas no campo 'email'
+const porEmail = await db.search('@email.com', 'email');
+// Retorna todos os usuários com emails
+```
+
+### Busca Case-Insensitive
+```javascript
+await db.set('produto1', { nome: 'Notebook Dell', categoria: 'Eletrônicos' });
+await db.set('produto2', { nome: 'Mouse Logitech', categoria: 'Periféricos' });
+
+// Busca case-insensitive
+const resultados = await db.search('DELL'); // Encontra "Dell"
+const resultados2 = await db.search('mouse'); // Encontra "Mouse"
+```
+
+### Busca em Arrays
+```javascript
+await db.set('user1', { 
+    nome: 'João', 
+    hobbies: ['programação', 'leitura', 'música'] 
+});
+
+// Buscar nos hobbies
+const resultados = await db.search('programação', 'hobbies');
+console.log(resultados); // Encontra user1
+```
+
+### Busca em Objetos Aninhados
+```javascript
+await db.set('empresa1', {
+    nome: 'TechCorp',
+    endereco: {
+        cidade: 'São Paulo',
+        estado: 'SP'
+    },
+    funcionarios: [
+        { nome: 'Ana', cargo: 'Desenvolvedora' },
+        { nome: 'Carlos', cargo: 'Designer' }
+    ]
+});
+
+// Buscar em propriedades aninhadas
+const porCidade = await db.search('São Paulo', 'endereco.cidade');
+const porCargo = await db.search('Desenvolvedora', 'funcionarios.cargo');
+```
+
+## Sistema de Pontuação
+
+O score é calculado baseado na relevância:
+
+```javascript
+// Score 1.0 - Correspondência exata
+await db.search('João'); // Encontra exatamente "João"
+
+// Score 0.8 - Correspondência parcial
+await db.search('Jo'); // Encontra "João"
+
+// Score 0.6 - Correspondência com palavras
+await db.search('Silva'); // Encontra "João Silva"
+```
+
+### Ordenação por Relevância
+```javascript
+const resultados = await db.search('tech');
+// Automaticamente ordenados por score (maior para menor)
+
+resultados.forEach(result => {
+    console.log(`${result.key}: ${result.score}`);
+});
+```
+
+## Busca Avançada
+
+### Múltiplos Termos
+```javascript
+// Buscar por múltiplos termos (OR)
+async function searchMultiple(terms) {
+    const resultados = [];
+    for (const term of terms) {
+        const found = await db.search(term);
+        resultados.push(...found);
+    }
+    
+    // Remover duplicatas e ordenar por score
+    const unique = resultados.filter((item, index, arr) => 
+        arr.findIndex(i => i.key === item.key) === index
+    );
+    
+    return unique.sort((a, b) => b.score - a.score);
+}
+
+const resultados = await searchMultiple(['João', 'Silva', 'dev']);
+```
+
+### Filtrar por Score Mínimo
+```javascript
+const resultados = await db.search('termo');
+const relevantes = resultados.filter(r => r.score >= 0.7);
+```
+
+### Busca com Limite
+```javascript
+const resultados = await db.search('termo');
+const top5 = resultados.slice(0, 5); // Apenas top 5
+```
+
+## Casos de Uso
+
+### Sistema de Busca de Usuários
+```javascript
+async function buscarUsuarios(query) {
+    const [porNome, porEmail, porTelefone] = await Promise.all([
+        db.search(query, 'nome'),
+        db.search(query, 'email'),
+        db.search(query, 'telefone')
+    ]);
+    
+    const todos = [...porNome, ...porEmail, ...porTelefone];
+    const unicos = todos.filter((item, index, arr) => 
+        arr.findIndex(i => i.key === item.key) === index
+    );
+    
+    return unicos.sort((a, b) => b.score - a.score);
+}
+```
+
+### Busca de Produtos
+```javascript
+async function buscarProdutos(termo) {
+    const resultados = await db.search(termo);
+    
+    return resultados
+        .filter(r => r.key.startsWith('produto_'))
+        .map(r => ({
+            id: r.key,
+            produto: r.value,
+            relevancia: r.score
+        }));
+}
+```
+
+## Performance
+
+```javascript
+// ✅ Eficiente - busca em propriedade específica
+await db.search('termo', 'nome');
+
+// ❌ Menos eficiente - busca global
+await db.search('termo');
+
+// ✅ Otimização com cache
+const cache = new Map();
+async function searchWithCache(term) {
+    if (cache.has(term)) {
+        return cache.get(term);
+    }
+    
+    const results = await db.search(term);
+    cache.set(term, results);
+    return results;
+}
+```
+
+## Veja Também
+
+- [between](./between.mdx) - Busca por intervalos
+- [startsWith](./startsWith.mdx) - Busca por prefixo
+- [regex](./regex.mdx) - Busca com expressões regulares
+- [custom](./custom.mdx) - Busca personalizada
+

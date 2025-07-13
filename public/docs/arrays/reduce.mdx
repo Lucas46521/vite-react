@@ -1,0 +1,190 @@
+
+# reduce()
+
+Executa uma função redutora em cada elemento do array, resultando em um único valor de retorno.
+
+## Sintaxe
+
+```javascript
+await db.reduce(key, callback, initialValue)
+```
+
+## Parâmetros
+
+- `key` (string): Chave do array no banco
+- `callback` (function): Função redutora
+- `initialValue` (any, opcional): Valor inicial do acumulador
+
+## Callback
+
+```javascript
+function callback(accumulator, currentValue, index, array) {
+  // Retorna o novo valor do acumulador
+}
+```
+
+## Retorno
+
+Retorna o valor final do acumulador.
+
+## Exemplos
+
+### Soma de Números
+
+```javascript
+await db.set('numeros', [1, 2, 3, 4, 5]);
+
+// Soma total
+const soma = await db.reduce('numeros', (acc, num) => acc + num, 0);
+console.log(soma); // 15
+
+// Produto total
+const produto = await db.reduce('numeros', (acc, num) => acc * num, 1);
+console.log(produto); // 120
+```
+
+### Agregando Objetos
+
+```javascript
+const vendas = [
+  { produto: 'Laptop', valor: 2500 },
+  { produto: 'Mouse', valor: 50 },
+  { produto: 'Teclado', valor: 100 },
+  { produto: 'Monitor', valor: 800 }
+];
+
+await db.set('vendas', vendas);
+
+// Valor total das vendas
+const totalVendas = await db.reduce('vendas', (acc, venda) => {
+  return acc + venda.valor;
+}, 0);
+console.log(totalVendas); // 3450
+```
+
+### Agrupando Dados
+
+```javascript
+const pessoas = [
+  { nome: 'João', cidade: 'São Paulo' },
+  { nome: 'Maria', cidade: 'Rio de Janeiro' },
+  { nome: 'Pedro', cidade: 'São Paulo' },
+  { nome: 'Ana', cidade: 'Belo Horizonte' },
+  { nome: 'Carlos', cidade: 'Rio de Janeiro' }
+];
+
+await db.set('pessoas', pessoas);
+
+// Agrupar por cidade
+const porCidade = await db.reduce('pessoas', (acc, pessoa) => {
+  const cidade = pessoa.cidade;
+  if (!acc[cidade]) {
+    acc[cidade] = [];
+  }
+  acc[cidade].push(pessoa.nome);
+  return acc;
+}, {});
+
+console.log(porCidade);
+// {
+//   'São Paulo': ['João', 'Pedro'],
+//   'Rio de Janeiro': ['Maria', 'Carlos'],
+//   'Belo Horizonte': ['Ana']
+// }
+```
+
+### Encontrando Máximo/Mínimo
+
+```javascript
+await db.set('idades', [25, 30, 22, 35, 28]);
+
+// Idade máxima
+const idadeMax = await db.reduce('idades', (max, idade) => {
+  return idade > max ? idade : max;
+});
+console.log(idadeMax); // 35
+
+// Idade mínima
+const idadeMin = await db.reduce('idades', (min, idade) => {
+  return idade < min ? idade : min;
+});
+console.log(idadeMin); // 22
+```
+
+### Contando Ocorrências
+
+```javascript
+await db.set('frutas', ['apple', 'banana', 'apple', 'orange', 'banana', 'apple']);
+
+// Contar ocorrências
+const contagem = await db.reduce('frutas', (acc, fruta) => {
+  acc[fruta] = (acc[fruta] || 0) + 1;
+  return acc;
+}, {});
+
+console.log(contagem);
+// { apple: 3, banana: 2, orange: 1 }
+```
+
+### Flatten (Achatar Array)
+
+```javascript
+const arrays = [[1, 2], [3, 4], [5, 6, 7]];
+await db.set('arrays', arrays);
+
+// Achatar array bidimensional
+const achatado = await db.reduce('arrays', (acc, arr) => {
+  return acc.concat(arr);
+}, []);
+console.log(achatado); // [1, 2, 3, 4, 5, 6, 7]
+```
+
+### Transformação com Acumulador Complexo
+
+```javascript
+const transacoes = [
+  { tipo: 'entrada', valor: 1000 },
+  { tipo: 'saida', valor: 200 },
+  { tipo: 'entrada', valor: 500 },
+  { tipo: 'saida', valor: 150 }
+];
+
+await db.set('transacoes', transacoes);
+
+// Calcular saldo e estatísticas
+const relatorio = await db.reduce('transacoes', (acc, transacao) => {
+  if (transacao.tipo === 'entrada') {
+    acc.saldo += transacao.valor;
+    acc.totalEntradas += transacao.valor;
+    acc.quantidadeEntradas++;
+  } else {
+    acc.saldo -= transacao.valor;
+    acc.totalSaidas += transacao.valor;
+    acc.quantidadeSaidas++;
+  }
+  return acc;
+}, {
+  saldo: 0,
+  totalEntradas: 0,
+  totalSaidas: 0,
+  quantidadeEntradas: 0,
+  quantidadeSaidas: 0
+});
+
+console.log(relatorio);
+// {
+//   saldo: 1150,
+//   totalEntradas: 1500,
+//   totalSaidas: 350,
+//   quantidadeEntradas: 2,
+//   quantidadeSaidas: 2
+// }
+```
+
+## Notas
+
+- Se `initialValue` não for fornecido, o primeiro elemento será usado como valor inicial
+- Se o array estiver vazio e não houver `initialValue`, será lançado um erro
+- A função é executada para cada elemento do array (exceto o primeiro, se não houver `initialValue`)
+- Se a chave não existir, retorna `undefined` (ou `initialValue` se fornecido)
+- Se o valor não for um array, converte para array antes de reduzir

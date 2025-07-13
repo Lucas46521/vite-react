@@ -1,0 +1,129 @@
+
+---
+title: import()
+description: Importa dados de arquivos externos
+---
+
+# import()
+
+Importa dados de arquivos externos em diferentes formatos (JSON, CSV, XML) para o banco de dados.
+
+## Sintaxe
+
+```typescript
+await db.import(filePath: string, options?: ImportOptions): Promise<ImportResult>
+```
+
+## Parâmetros
+
+- `filePath`: Caminho para o arquivo a ser importado
+- `options` (opcional): Configurações de importação
+  - `format`: Formato do arquivo (auto-detectado se não especificado)
+  - `merge`: Mesclar com dados existentes (padrão: false)
+  - `keyPrefix`: Prefixo para as chaves importadas
+  - `transform`: Função para transformar dados durante importação
+
+## Retorno
+
+```typescript
+{
+  recordsImported: number,
+  recordsSkipped: number,
+  errors: string[],
+  format: string
+}
+```
+
+## Exemplos
+
+### Importação JSON
+```javascript
+const result = await db.import('./data/users.json');
+
+console.log(`${result.recordsImported} usuários importados`);
+if (result.errors.length > 0) {
+  console.warn('Erros encontrados:', result.errors);
+}
+```
+
+### Importação CSV
+```javascript
+const result = await db.import('./data/products.csv', {
+  keyPrefix: 'product:',
+  transform: (row, index) => ({
+    id: index,
+    name: row.name,
+    price: parseFloat(row.price),
+    active: row.active === 'true'
+  })
+});
+```
+
+### Importação com Mesclagem
+```javascript
+// Mesclar dados sem sobrescrever existentes
+const result = await db.import('./backup.json', {
+  merge: true
+});
+
+console.log(`${result.recordsImported} novos registros`);
+console.log(`${result.recordsSkipped} registros já existentes`);
+```
+
+### Importação XML
+```javascript
+const result = await db.import('./config.xml', {
+  format: 'xml',
+  keyPrefix: 'config:'
+});
+```
+
+### Importação com Transformação
+```javascript
+const result = await db.import('./legacy-data.csv', {
+  transform: (row, index) => {
+    // Normalizar dados legados
+    return {
+      id: `user:${row.user_id}`,
+      name: row.full_name.trim(),
+      email: row.email_address.toLowerCase(),
+      createdAt: new Date(row.created_date)
+    };
+  }
+});
+```
+
+## Formatos Suportados
+
+### JSON
+```json
+{
+  "user:1": { "name": "João", "age": 25 },
+  "user:2": { "name": "Maria", "age": 30 }
+}
+```
+
+### CSV
+```csv
+name,age,email
+João,25,joao@email.com
+Maria,30,maria@email.com
+```
+
+### XML
+```xml
+<data>
+  <record key="user:1">
+    <name>João</name>
+    <age>25</age>
+  </record>
+</data>
+```
+
+## Casos de Uso
+
+- Migração de sistemas legados
+- Importação de dados de planilhas
+- Sincronização com APIs externas
+- Restauração de backups
+- Seeding de dados para desenvolvimento

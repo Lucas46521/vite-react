@@ -1,0 +1,449 @@
+
+# Sistema de Eventos
+
+O HelperDB inclui um sistema completo de eventos baseado no EventEmitter que permite monitoramento em tempo real de todas as operações.
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './data.sqlite',
+    events: {
+        enabled: true,
+        maxListeners: 100,
+        async: true,
+        buffer: {
+            enabled: true,
+            maxSize: 1000,
+            flushInterval: 5000 // 5 segundos
+        }
+    }
+});
+```
+
+## Eventos Básicos
+
+### Operações de Dados
+```javascript
+// Evento de escrita
+db.on('set', (key, value, options) => {
+    console.log(`📝 Dados salvos: ${key}`, value);
+});
+
+// Evento de leitura
+db.on('get', (key, value) => {
+    console.log(`📖 Dados lidos: ${key}`, value);
+});
+
+// Evento de exclusão
+db.on('delete', (key, existed) => {
+    console.log(`🗑️ Dados removidos: ${key} (existia: ${existed})`);
+});
+
+// Evento de verificação
+db.on('has', (key, exists) => {
+    console.log(`🔍 Verificação: ${key} (existe: ${exists})`);
+});
+```
+
+### Operações Matemáticas
+```javascript
+// Adição
+db.on('add', (key, value, result) => {
+    console.log(`➕ Soma: ${key} + ${value} = ${result}`);
+});
+
+// Subtração
+db.on('sub', (key, value, result) => {
+    console.log(`➖ Subtração: ${key} - ${value} = ${result}`);
+});
+```
+
+## Eventos de Sistema
+
+### Conexão e Inicialização
+```javascript
+db.on('connected', (driver, config) => {
+    console.log(`🔗 Conectado ao ${driver}`);
+});
+
+db.on('ready', () => {
+    console.log('✅ Database pronto para uso');
+});
+
+db.on('error', (error) => {
+    console.error('❌ Erro no database:', error);
+});
+```
+
+### Performance e Estatísticas
+```javascript
+db.on('performance', (stats) => {
+    console.log('📊 Estatísticas:', stats);
+    // {
+    //   operation: 'get',
+    //   duration: 15, // ms
+    //   cacheHit: true,
+    //   key: 'user:1'
+    // }
+});
+
+db.on('slow_query', (operation, duration, key) => {
+    console.warn(`🐌 Query lenta: ${operation} (${duration}ms) - ${key}`);
+});
+```
+
+## Eventos de Cache
+
+```javascript
+// Cache hit
+db.on('cache:hit', (key) => {
+    console.log(`⚡ Cache hit: ${key}`);
+});
+
+// Cache miss
+db.on('cache:miss', (key) => {
+    console.log(`💾 Cache miss: ${key}`);
+});
+
+// Cache invalidação
+db.on('cache:invalidate', (key) => {
+    console.log(`🧹 Cache limpo: ${key}`);
+});
+
+// Estatísticas do cache
+db.on('cache:stats', (stats) => {
+    console.log('📈 Cache stats:', stats);
+});
+```
+
+## Eventos de Backup
+
+```javascript
+// Backup iniciado
+db.on('backup:started', (info) => {
+    console.log('💾 Backup iniciado:', info);
+});
+
+// Backup concluído
+db.on('backup:completed', (info) => {
+    console.log('✅ Backup concluído:', info.path);
+});
+
+// Backup falhou
+db.on('backup:failed', (error) => {
+    console.error('❌ Backup falhou:', error);
+});
+
+// Limpeza de backups
+db.on('backup:cleanup', (deletedCount) => {
+    console.log(`🧹 ${deletedCount} backups antigos removidos`);
+});
+```
+
+## Eventos de Transação
+
+```javascript
+// Transação iniciada
+db.on('transaction:begin', (txInfo) => {
+    console.log(`🔄 Transação iniciada: ${txInfo.id}`);
+});
+
+// Transação commitada
+db.on('transaction:commit', (txInfo) => {
+    console.log(`✅ Commit: ${txInfo.id} (${txInfo.duration}ms)`);
+});
+
+// Transação revertida
+db.on('transaction:rollback', (txInfo) => {
+    console.log(`❌ Rollback: ${txInfo.id} - ${txInfo.reason}`);
+});
+
+// Deadlock detectado
+db.on('transaction:deadlock', (txInfo) => {
+    console.warn(`⚠️ Deadlock: ${txInfo.id}`);
+});
+```
+
+## Eventos Personalizados
+
+### Emitindo Eventos Customizados
+```javascript
+// Dentro de uma operação customizada
+class UserService {
+    constructor(db) {
+        this.db = db;
+    }
+    
+    async createUser(userData) {
+        // Emitir evento antes da criação
+        this.db.emit('user:creating', userData);
+        
+        const userId = `user:${Date.now()}`;
+        await this.db.set(userId, userData);
+        
+        // Emitir evento após criação
+        this.db.emit('user:created', userId, userData);
+        
+        return userId;
+    }
+}
+
+// Escutando eventos customizados
+db.on('user:creating', (userData) => {
+    console.log('👤 Criando usuário:', userData.name);
+});
+
+db.on('user:created', (userId, userData) => {
+    console.log(`✅ Usuário criado: ${userId}`);
+    
+    // Ações pós-criação
+    sendWelcomeEmail(userData.email);
+    logUserCreation(userId);
+});
+```
+
+## Filtros e Middlewares
+
+### Interceptar Operações
+```javascript
+// Middleware para log de todas as operações
+db.on('*', (eventName, ...args) => {
+    if (eventName.startsWith('performance')) return;
+    
+    console.log(`📋 Evento: ${eventName}`, args);
+});
+
+// Filter para operações específicas
+db.addFilter('set', async (key, value, options) => {
+    // Validação antes de salvar
+    if (key.startsWith('user:') && !value.email) {
+        throw new Error('Email é obrigatório para usuários');
+    }
+    
+    // Transformação de dados
+    if (typeof value === 'object') {
+        value.lastModified = new Date().toISOString();
+    }
+    
+    return { key, value, options };
+});
+```
+
+## Event Aggregation
+
+### Agregador de Eventos
+```javascript
+class EventAggregator {
+    constructor(db) {
+        this.db = db;
+        this.stats = {
+            operations: 0,
+            errors: 0,
+            cacheHits: 0,
+            cacheMisses: 0
+        };
+        
+        this.setupListeners();
+    }
+    
+    setupListeners() {
+        // Contar operações
+        ['set', 'get', 'delete', 'has'].forEach(op => {
+            this.db.on(op, () => this.stats.operations++);
+        });
+        
+        // Contar erros
+        this.db.on('error', () => this.stats.errors++);
+        
+        // Estatísticas de cache
+        this.db.on('cache:hit', () => this.stats.cacheHits++);
+        this.db.on('cache:miss', () => this.stats.cacheMisses++);
+        
+        // Relatório periódico
+        setInterval(() => this.report(), 60000); // 1 minuto
+    }
+    
+    report() {
+        const cacheHitRate = this.stats.cacheHits / 
+            (this.stats.cacheHits + this.stats.cacheMisses);
+            
+        console.log('📊 Relatório de 1 minuto:', {
+            ...this.stats,
+            cacheHitRate: (cacheHitRate * 100).toFixed(2) + '%'
+        });
+        
+        // Reset stats
+        Object.keys(this.stats).forEach(key => this.stats[key] = 0);
+    }
+}
+
+const aggregator = new EventAggregator(db);
+```
+
+## Configuração Avançada
+
+```javascript
+const db = new HelperDB({
+    driver: 'sqlite',
+    events: {
+        enabled: true,
+        maxListeners: 50,
+        async: true,
+        
+        // Buffer de eventos para alta performance
+        buffer: {
+            enabled: true,
+            maxSize: 1000,
+            flushInterval: 5000,
+            onFlush: (events) => {
+                // Processar eventos em lote
+                processEventsBatch(events);
+            }
+        },
+        
+        // Filtros globais
+        filters: {
+            // Filtrar eventos de sistema em produção
+            production: (eventName) => {
+                return !eventName.startsWith('performance');
+            },
+            
+            // Filtrar por chaves sensíveis
+            security: (eventName, key) => {
+                return !key?.includes('password');
+            }
+        },
+        
+        // Rate limiting
+        rateLimit: {
+            enabled: true,
+            maxEventsPerSecond: 1000,
+            onLimit: (eventName, count) => {
+                console.warn(`Rate limit atingido para ${eventName}: ${count}/s`);
+            }
+        }
+    }
+});
+```
+
+## Exemplo Completo - Sistema de Monitoramento
+
+```javascript
+class DatabaseMonitor {
+    constructor(db) {
+        this.db = db;
+        this.metrics = {
+            operations: new Map(),
+            errors: [],
+            slowQueries: [],
+            cacheStats: { hits: 0, misses: 0 }
+        };
+        
+        this.setupMonitoring();
+    }
+    
+    setupMonitoring() {
+        // Monitorar todas as operações
+        ['set', 'get', 'delete', 'has', 'add', 'sub'].forEach(op => {
+            this.db.on(op, (...args) => {
+                this.recordOperation(op, args);
+            });
+        });
+        
+        // Monitorar performance
+        this.db.on('performance', (stats) => {
+            if (stats.duration > 100) { // > 100ms é lento
+                this.recordSlowQuery(stats);
+            }
+        });
+        
+        // Monitorar erros
+        this.db.on('error', (error) => {
+            this.recordError(error);
+        });
+        
+        // Monitorar cache
+        this.db.on('cache:hit', () => this.metrics.cacheStats.hits++);
+        this.db.on('cache:miss', () => this.metrics.cacheStats.misses++);
+        
+        // Monitorar transações
+        this.db.on('transaction:rollback', (txInfo) => {
+            console.warn(`⚠️ Transação revertida: ${txInfo.reason}`);
+        });
+        
+        // Relatório periódico
+        setInterval(() => this.generateReport(), 300000); // 5 minutos
+    }
+    
+    recordOperation(operation, args) {
+        const count = this.metrics.operations.get(operation) || 0;
+        this.metrics.operations.set(operation, count + 1);
+    }
+    
+    recordSlowQuery(stats) {
+        this.metrics.slowQueries.push({
+            ...stats,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Manter apenas os últimos 100
+        if (this.metrics.slowQueries.length > 100) {
+            this.metrics.slowQueries.shift();
+        }
+    }
+    
+    recordError(error) {
+        this.metrics.errors.push({
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Manter apenas os últimos 50 erros
+        if (this.metrics.errors.length > 50) {
+            this.metrics.errors.shift();
+        }
+    }
+    
+    generateReport() {
+        const { hits, misses } = this.metrics.cacheStats;
+        const cacheHitRate = hits / (hits + misses) || 0;
+        
+        const report = {
+            timestamp: new Date().toISOString(),
+            operations: Object.fromEntries(this.metrics.operations),
+            totalOperations: Array.from(this.metrics.operations.values())
+                .reduce((sum, count) => sum + count, 0),
+            errorCount: this.metrics.errors.length,
+            slowQueryCount: this.metrics.slowQueries.length,
+            cacheHitRate: (cacheHitRate * 100).toFixed(2) + '%',
+            recentErrors: this.metrics.errors.slice(-5),
+            slowestQueries: this.metrics.slowQueries
+                .sort((a, b) => b.duration - a.duration)
+                .slice(0, 5)
+        };
+        
+        console.log('📊 Relatório do Database:', report);
+        
+        // Alertas
+        if (cacheHitRate < 0.8) {
+            console.warn('⚠️ Taxa de cache hit baixa:', cacheHitRate);
+        }
+        
+        if (this.metrics.errors.length > 10) {
+            console.error('🚨 Muitos erros detectados:', this.metrics.errors.length);
+        }
+        
+        // Reset metrics
+        this.metrics.operations.clear();
+        this.metrics.cacheStats = { hits: 0, misses: 0 };
+    }
+}
+
+// Inicializar monitoramento
+const monitor = new DatabaseMonitor(db);
+```

@@ -1,0 +1,105 @@
+
+
+# set(key, value)
+
+Define um valor na base de dados.
+
+## Sintaxe
+
+```javascript
+await db.set(key, value)
+```
+
+## Parâmetros
+
+- `key` (string): A chave onde salvar o valor
+- `value` (any): O valor a ser salvo
+
+## Retorno
+
+- `Promise<void>`: Não retorna valor
+
+## Exemplos
+
+### Exemplo Básico
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Salvar string
+await db.set('nome', 'João');
+
+// Salvar número
+await db.set('idade', 25);
+
+// Salvar objeto
+await db.set('usuario', {
+    nome: 'João',
+    idade: 25,
+    ativo: true
+});
+
+// Salvar array
+await db.set('hobbies', ['programação', 'leitura', 'música']);
+```
+
+### Usando Notação de Ponto
+```javascript
+// Definir propriedade específica de um objeto
+await db.set('usuario.nome', 'João Silva');
+await db.set('usuario.configuracoes.tema', 'escuro');
+
+// Adicionar item a array aninhado
+await db.set('usuario.hobbies.0', 'programação');
+```
+
+### Tipos de Dados Suportados
+```javascript
+// Primitivos
+await db.set('string', 'texto');
+await db.set('number', 42);
+await db.set('boolean', true);
+await db.set('null', null);
+
+// Objetos complexos
+await db.set('data', new Date());
+await db.set('buffer', Buffer.from('dados'));
+await db.set('map', new Map([['chave', 'valor']]));
+
+// Estruturas aninhadas
+await db.set('complexo', {
+    nivel1: {
+        nivel2: {
+            array: [1, 2, 3],
+            objeto: { prop: 'valor' }
+        }
+    }
+});
+```
+
+## Notas
+
+- ✅ Sobrescreve valores existentes
+- ✅ Cria estruturas de objetos automaticamente se necessário
+- ✅ Suporta notação de ponto para propriedades aninhadas
+- ⚠️ Valores `undefined` são ignorados
+- ⚠️ Chaves vazias ou null geram erro
+
+## Eventos Emitidos
+
+```javascript
+db.on('beforeSet', (data) => {
+    console.log('Preparando para salvar:', data.key);
+});
+
+db.on('set', (data) => {
+    console.log('Dados salvos:', data.key, data.value);
+});
+```
+
+## Veja Também
+
+- [get](./get.mdx) - Obter valores
+- [has](./has.mdx) - Verificar existência
+- [delete](./delete.mdx) - Remover valores
+

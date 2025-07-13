@@ -1,0 +1,300 @@
+
+# between()
+
+Busca valores numéricos que estão entre um valor mínimo e máximo (inclusive).
+
+## Sintaxe
+
+```javascript
+await db.between(key, min, max, options)
+```
+
+## Parâmetros
+
+- **key** (string): A chave ou padrão de busca
+- **min** (number): Valor mínimo (inclusive)
+- **max** (number): Valor máximo (inclusive)
+- **options** (object, opcional): Opções de busca
+
+### Opções Disponíveis
+
+```javascript
+{
+    path: string,      // Caminho para propriedade aninhada
+    strict: boolean,   // Busca exata apenas números
+    limit: number,     // Limite de resultados
+    offset: number     // Offset para paginação
+}
+```
+
+## Retorno
+
+- **Promise<Array>**: Array com os resultados encontrados
+
+## Exemplos
+
+### Busca Básica por Números
+
+```javascript
+// Definir alguns valores
+await db.set('score1', 85);
+await db.set('score2', 92);
+await db.set('score3', 78);
+await db.set('score4', 95);
+await db.set('score5', 88);
+
+// Buscar scores entre 80 e 90
+const scores = await db.between('score', 80, 90);
+console.log(scores);
+// [
+//   { key: 'score1', value: 85 },
+//   { key: 'score5', value: 88 }
+// ]
+```
+
+### Busca com Propriedades Aninhadas
+
+```javascript
+// Dados de produtos
+await db.set('produto1', { nome: 'Notebook', preco: 2500 });
+await db.set('produto2', { nome: 'Mouse', preco: 50 });
+await db.set('produto3', { nome: 'Teclado', preco: 150 });
+await db.set('produto4', { nome: 'Monitor', preco: 800 });
+
+// Buscar produtos com preço entre 100 e 1000
+const produtos = await db.between('produto', 100, 1000, {
+    path: 'preco'
+});
+
+console.log(produtos);
+// [
+//   { key: 'produto3', value: { nome: 'Teclado', preco: 150 } },
+//   { key: 'produto4', value: { nome: 'Monitor', preco: 800 } }
+// ]
+```
+
+### Sistema de Avaliações
+
+```javascript
+class SistemaAvaliacoes {
+    constructor(db) {
+        this.db = db;
+    }
+    
+    async adicionarAvaliacao(produtoId, userId, nota, comentario) {
+        const avaliacaoId = `avaliacao_${Date.now()}`;
+        await this.db.set(avaliacaoId, {
+            produtoId,
+            userId,
+            nota,
+            comentario,
+            data: new Date()
+        });
+        return avaliacaoId;
+    }
+    
+    // Buscar avaliações por faixa de nota
+    async buscarPorNota(notaMin, notaMax) {
+        return await this.db.between('avaliacao_', notaMin, notaMax, {
+            path: 'nota'
+        });
+    }
+    
+    // Buscar avaliações positivas (4-5 estrelas)
+    async buscarPositivas() {
+        return await this.buscarPorNota(4, 5);
+    }
+    
+    // Buscar avaliações negativas (1-2 estrelas)
+    async buscarNegativas() {
+        return await this.buscarPorNota(1, 2);
+    }
+    
+    // Buscar avaliações neutras (3 estrelas)
+    async buscarNeutras() {
+        return await this.buscarPorNota(3, 3);
+    }
+}
+
+// Uso
+const avaliacoes = new SistemaAvaliacoes(db);
+
+await avaliacoes.adicionarAvaliacao('prod1', 'user1', 5, 'Excelente!');
+await avaliacoes.adicionarAvaliacao('prod1', 'user2', 2, 'Não gostei');
+await avaliacoes.adicionarAvaliacao('prod1', 'user3', 4, 'Muito bom');
+
+const positivas = await avaliacoes.buscarPositivas();
+console.log(`${positivas.length} avaliações positivas encontradas`);
+```
+
+### Filtro de Idade
+
+```javascript
+// Dados de usuários
+await db.set('user1', { nome: 'Ana', idade: 25, ativo: true });
+await db.set('user2', { nome: 'Bruno', idade: 17, ativo: true });
+await db.set('user3', { nome: 'Carlos', idade: 35, ativo: false });
+await db.set('user4', { nome: 'Diana', idade: 22, ativo: true });
+
+// Buscar usuários adultos (18 a 65 anos)
+const adultos = await db.between('user', 18, 65, {
+    path: 'idade'
+});
+
+console.log('Usuários adultos:', adultos.map(u => u.value.nome));
+// ['Ana', 'Carlos', 'Diana']
+
+// Combinar com outros filtros
+const adultosAtivos = adultos.filter(user => user.value.ativo);
+console.log('Adultos ativos:', adultosAtivos.map(u => u.value.nome));
+// ['Ana', 'Diana']
+```
+
+### Sistema de Preços
+
+```javascript
+class BuscaPrecos {
+    constructor(db) {
+        this.db = db;
+    }
+    
+    async buscarPorFaixaPreco(min, max, categoria = null) {
+        let padrão = categoria ? `${categoria}_` : '';
+        
+        const resultados = await this.db.between(padrão, min, max, {
+            path: 'preco'
+        });
+        
+        return resultados.map(item => ({
+            id: item.key,
+            ...item.value
+        }));
+    }
+    
+    async buscarBaratos(limite = 100) {
+        return await this.buscarPorFaixaPreco(0, limite);
+    }
+    
+    async buscarCusteioMedio(min = 100, max = 500) {
+        return await this.buscarPorFaixaPreco(min, max);
+    }
+    
+    async buscarPremium(min = 500) {
+        return await this.buscarPorFaixaPreco(min, Infinity);
+    }
+    
+    // Busca com múltiplas faixas
+    async buscarPromocao() {
+        const economicos = await this.buscarBaratos(50);
+        const medios = await this.buscarCusteioMedio(200, 300);
+        
+        return {
+            economicos,
+            medios,
+            total: economicos.length + medios.length
+        };
+    }
+}
+
+// Uso
+const busca = new BuscaPrecos(db);
+
+// Adicionar produtos
+await db.set('eletronico_1', { nome: 'Fone', preco: 80, categoria: 'audio' });
+await db.set('eletronico_2', { nome: 'Smartphone', preco: 1200, categoria: 'mobile' });
+await db.set('livro_1', { nome: 'JavaScript', preco: 45, categoria: 'programação' });
+
+const baratos = await busca.buscarBaratos();
+console.log('Produtos baratos:', baratos);
+```
+
+### Análise de Performance
+
+```javascript
+async function analisarTemposResposta() {
+    // Buscar requisições por tempo de resposta
+    const lentas = await db.between('requisicao_', 1000, Infinity, {
+        path: 'tempoResposta'
+    });
+    
+    const rapidas = await db.between('requisicao_', 0, 200, {
+        path: 'tempoResposta'
+    });
+    
+    const medias = await db.between('requisicao_', 200, 1000, {
+        path: 'tempoResposta'
+    });
+    
+    return {
+        lentas: lentas.length,
+        rapidas: rapidas.length,
+        medias: medias.length,
+        percentualLentas: (lentas.length / (lentas.length + rapidas.length + medias.length)) * 100
+    };
+}
+
+// Salvar dados de requisições
+await db.set('requisicao_1', { url: '/api/users', tempoResposta: 150 });
+await db.set('requisicao_2', { url: '/api/products', tempoResposta: 2500 });
+await db.set('requisicao_3', { url: '/api/orders', tempoResposta: 300 });
+
+const stats = await analisarTemposResposta();
+console.log('Análise de performance:', stats);
+```
+
+### Paginação com Between
+
+```javascript
+async function buscarProdutosPaginados(precoMin, precoMax, pagina = 1, itensPorPagina = 10) {
+    const offset = (pagina - 1) * itensPorPagina;
+    
+    const resultados = await db.between('produto', precoMin, precoMax, {
+        path: 'preco',
+        limit: itensPorPagina,
+        offset: offset
+    });
+    
+    // Contar total para calcular páginas
+    const total = await db.between('produto', precoMin, precoMax, {
+        path: 'preco'
+    });
+    
+    return {
+        dados: resultados,
+        paginacao: {
+            paginaAtual: pagina,
+            itensPorPagina,
+            totalItens: total.length,
+            totalPaginas: Math.ceil(total.length / itensPorPagina)
+        }
+    };
+}
+
+// Uso
+const pagina1 = await buscarProdutosPaginados(100, 500, 1, 5);
+console.log('Página 1:', pagina1);
+```
+
+## Casos de Uso
+
+- Filtros de preço em e-commerce
+- Busca por faixa etária
+- Análise de performance (tempos de resposta)
+- Sistemas de avaliação/rating
+- Filtros de data/timestamp
+- Análise de métricas numéricas
+
+## Notas
+
+- Os valores min e max são **inclusivos**
+- Funciona apenas com valores numéricos
+- Use `path` para propriedades aninhadas
+- Suporta paginação com `limit` e `offset`
+- Retorna array vazio se nenhum valor for encontrado
+
+## Performance
+
+- Otimizado para buscas em propriedades indexadas
+- Para ranges grandes, considere usar índices
+- Use `limit` para controlar uso de memória
+- Cache resultados frequentes para melhor performance

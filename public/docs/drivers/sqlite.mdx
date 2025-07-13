@@ -1,0 +1,330 @@
+
+
+# SQLite Driver
+
+Driver padrão da Helper.DB para armazenamento em arquivo SQLite.
+
+## Características
+
+- 🗄️ **Persistente**: Dados salvos em arquivo
+- ⚡ **Rápido**: Operações locais de alta performance
+- 🔒 **Confiável**: ACID compliance
+- 📦 **Zero configuração**: Funciona imediatamente
+- 🔧 **Flexível**: Suporte a múltiplas tabelas
+
+## Instalação
+
+```bash
+npm install helper.db better-sqlite3
+```
+
+## Configuração Básica
+
+```javascript
+const { HelperDB, SqliteDriver } = require('helper.db');
+
+// Configuração padrão
+const db = new HelperDB(); // Usa SQLite por padrão
+
+// Configuração personalizada
+const db = new HelperDB({
+    driver: new SqliteDriver('minha-base.sqlite'),
+    table: 'dados'
+});
+```
+
+## Configurações Avançadas
+
+```javascript
+const driver = new SqliteDriver('database.sqlite', {
+    // Opções do better-sqlite3
+    readonly: false,
+    fileMustExist: false,
+    timeout: 5000,
+    verbose: console.log, // Log SQL para debug
+    
+    // Configurações de performance
+    pragma: {
+        journal_mode: 'WAL',
+        synchronous: 'NORMAL',
+        cache_size: -64000, // 64MB
+        temp_store: 'MEMORY',
+        foreign_keys: 'ON'
+    }
+});
+
+const db = new HelperDB({ driver });
+```
+
+## Estrutura da Tabela
+
+O driver cria automaticamente uma tabela com estrutura:
+
+```sql
+CREATE TABLE IF NOT EXISTS dados (
+    ID TEXT PRIMARY KEY,
+    json TEXT
+);
+```
+
+### Personalizar Nome da Tabela
+
+```javascript
+const db = new HelperDB({
+    driver: new SqliteDriver('app.sqlite'),
+    table: 'usuarios' // Nome personalizado
+});
+```
+
+## Múltiplas Tabelas
+
+```javascript
+const driver = new SqliteDriver('app.sqlite');
+
+// Diferentes instâncias para diferentes tabelas
+const usuarios = new HelperDB({ driver, table: 'usuarios' });
+const produtos = new HelperDB({ driver, table: 'produtos' });
+const configuracoes = new HelperDB({ driver, table: 'configuracoes' });
+
+// Usar a mesma conexão
+await usuarios.set('user1', { nome: 'João' });
+await produtos.set('prod1', { nome: 'Notebook' });
+await configuracoes.set('tema', 'escuro');
+```
+
+## Operações Diretas no Driver
+
+```javascript
+const driver = new SqliteDriver('database.sqlite');
+
+// Executar SQL diretamente
+const stmt = driver.db.prepare('SELECT * FROM dados WHERE ID LIKE ?');
+const resultados = stmt.all('user_%');
+
+// Backup do banco
+driver.db.backup('backup.sqlite');
+
+// Estatísticas
+const info = driver.db.pragma('table_info(dados)');
+console.log(info);
+```
+
+## Performance Optimization
+
+### Configuração de Alto Desempenho
+
+```javascript
+const driver = new SqliteDriver('database.sqlite', {
+    pragma: {
+        // Write-Ahead Logging para melhor concorrência
+        journal_mode: 'WAL',
+        
+        // Reduzir sincronização para velocidade
+        synchronous: 'NORMAL',
+        
+        // Aumentar cache
+        cache_size: -128000, // 128MB
+        
+        // Usar memória para operações temporárias
+        temp_store: 'MEMORY',
+        
+        // Otimizar para aplicações
+        optimize: true
+    }
+});
+```
+
+### Transações em Lote
+
+```javascript
+const driver = new SqliteDriver('database.sqlite');
+const db = new HelperDB({ driver });
+
+// Transação manual para múltiplas operações
+const transaction = driver.db.transaction(() => {
+    for (let i = 0; i < 1000; i++) {
+        db.set(`item${i}`, { valor: i });
+    }
+});
+
+transaction(); // Executa tudo de uma vez
+```
+
+## Backup e Restauração
+
+### Backup Automático
+
+```javascript
+const db = new HelperDB({
+    driver: new SqliteDriver('app.sqlite'),
+    enableBackup: true,
+    backupOptions: {
+        interval: 3600000, // 1 hora
+        path: './backups'
+    }
+});
+
+// Backup manual
+await db.backup('./backup-manual.sqlite');
+```
+
+### Backup com better-sqlite3
+
+```javascript
+const driver = new SqliteDriver('source.sqlite');
+
+// Backup nativo do SQLite
+driver.db.backup('destination.sqlite')
+    .then(() => console.log('Backup concluído'))
+    .catch(err => console.error('Erro no backup:', err));
+
+// Backup para base em memória
+const memoryDb = require('better-sqlite3')(':memory:');
+driver.db.backup(memoryDb);
+```
+
+## Monitoramento
+
+### Estatísticas da Base
+
+```javascript
+async function estatisticasBase(driver) {
+    const stats = {
+        // Tamanho do arquivo
+        tamanhoArquivo: require('fs').statSync(driver.filePath).size,
+        
+        // Informações do SQLite
+        pageCount: driver.db.pragma('page_count'),
+        pageSize: driver.db.pragma('page_size'),
+        
+        // Status WAL
+        walMode: driver.db.pragma('journal_mode'),
+        
+        // Cache
+        cacheSize: driver.db.pragma('cache_size')
+    };
+    
+    stats.tamanhoEstimado = stats.pageCount * stats.pageSize;
+    
+    return stats;
+}
+
+const stats = await estatisticasBase(driver);
+console.log('📊 Estatísticas da Base:', stats);
+```
+
+### Monitoramento de Performance
+
+```javascript
+class SQLiteMonitor {
+    constructor(driver) {
+        this.driver = driver;
+        this.metricas = {
+            consultas: 0,
+            tempoTotal: 0,
+            operacoesLentas: []
+        };
+    }
+    
+    medirOperacao(operacao, ...args) {
+        const inicio = Date.now();
+        
+        try {
+            const resultado = operacao.call(this.driver, ...args);
+            const tempo = Date.now() - inicio;
+            
+            this.metricas.consultas++;
+            this.metricas.tempoTotal += tempo;
+            
+            if (tempo > 100) { // Operações > 100ms
+                this.metricas.operacoesLentas.push({
+                    tempo,
+                    operacao: operacao.name,
+                    timestamp: new Date()
+                });
+            }
+            
+            return resultado;
+        } catch (error) {
+            console.error('Erro na operação:', error);
+            throw error;
+        }
+    }
+    
+    obterEstatisticas() {
+        return {
+            ...this.metricas,
+            tempoMedio: this.metricas.tempoTotal / this.metricas.consultas,
+            operacoesLentasRecentes: this.metricas.operacoesLentas.slice(-10)
+        };
+    }
+}
+```
+
+## Troubleshooting
+
+### Problemas Comuns
+
+```javascript
+// Erro: Database is locked
+// Solução: Usar WAL mode
+const driver = new SqliteDriver('database.sqlite', {
+    pragma: { journal_mode: 'WAL' }
+});
+
+// Erro: Database file is corrupted
+// Verificar integridade
+const integrityCheck = driver.db.pragma('integrity_check');
+if (integrityCheck[0] !== 'ok') {
+    console.error('Base corrupta:', integrityCheck);
+}
+
+// Reparar base corrupta
+driver.db.pragma('wal_checkpoint(TRUNCATE)');
+```
+
+### Debug e Logging
+
+```javascript
+const driver = new SqliteDriver('database.sqlite', {
+    verbose: (sql, params) => {
+        console.log('🔍 SQL:', sql);
+        if (params) console.log('📋 Params:', params);
+    }
+});
+```
+
+## Migração de Outras Bases
+
+### De JSON para SQLite
+
+```javascript
+async function migrarJsonParaSQLite(jsonFile, sqliteFile) {
+    const fs = require('fs').promises;
+    
+    // Ler dados JSON
+    const dados = JSON.parse(await fs.readFile(jsonFile, 'utf8'));
+    
+    // Criar nova base SQLite
+    const db = new HelperDB({
+        driver: new SqliteDriver(sqliteFile)
+    });
+    
+    // Migrar dados
+    for (const [chave, valor] of Object.entries(dados)) {
+        await db.set(chave, valor);
+    }
+    
+    console.log(`✅ Migração concluída: ${Object.keys(dados).length} registros`);
+}
+
+await migrarJsonParaSQLite('dados.json', 'dados.sqlite');
+```
+
+## Veja Também
+
+- [MySQL Driver](./mysql.mdx) - Driver para MySQL
+- [JSON Driver](./json.mdx) - Driver para arquivos JSON
+- [Memory Driver](./memory.mdx) - Driver em memória
+- [Configurações](../config/config.mdx) - Configurações gerais
+

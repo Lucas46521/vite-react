@@ -1,0 +1,270 @@
+
+# add() - Somar Valores
+
+O método `add()` adiciona um valor numérico a uma chave existente. Se a chave não existir, ela será criada com o valor especificado.
+
+## Sintaxe
+
+```javascript
+await db.add(key, value)
+```
+
+## Parâmetros
+
+- **key** (`string`): A chave onde somar o valor
+- **value** (`number`): O valor a ser adicionado
+
+## Retorno
+
+- **number**: O novo valor após a soma
+
+## Exemplos
+
+### Soma Básica
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Definir valor inicial
+await db.set('score', 100);
+
+// Somar valor
+const newScore = await db.add('score', 50);
+console.log(newScore); // 150
+
+// Verificar valor atual
+const currentScore = await db.get('score');
+console.log(currentScore); // 150
+```
+
+### Criação Automática
+```javascript
+// Se a chave não existir, será criada
+const result = await db.add('points', 25);
+console.log(result); // 25
+
+// Adicionar mais pontos
+await db.add('points', 75);
+const total = await db.get('points');
+console.log(total); // 100
+```
+
+### Valores Negativos
+```javascript
+// Usar valor negativo para subtrair
+await db.set('balance', 1000);
+const newBalance = await db.add('balance', -250);
+console.log(newBalance); // 750
+```
+
+### Incremento Unitário
+```javascript
+// Incrementar contador
+await db.set('views', 0);
+
+// Simular visualizações
+for (let i = 0; i < 5; i++) {
+    await db.add('views', 1);
+}
+
+const totalViews = await db.get('views');
+console.log(totalViews); // 5
+```
+
+## Casos de Uso
+
+### 📊 **Contadores e Estatísticas**
+```javascript
+// Sistema de pontuação
+async function addPoints(userId, points, reason) {
+    const userKey = `user:${userId}:points`;
+    const newTotal = await db.add(userKey, points);
+    
+    // Registrar histórico
+    await db.push(`user:${userId}:history`, {
+        action: 'add_points',
+        points,
+        reason,
+        newTotal,
+        timestamp: new Date().toISOString()
+    });
+    
+    return newTotal;
+}
+
+// Uso
+await addPoints(1, 100, 'Completou missão');
+await addPoints(1, 50, 'Bonus diário');
+```
+
+### 💰 **Sistema de Moedas**
+```javascript
+async function processTransaction(fromUserId, toUserId, amount) {
+    // Validar saldo
+    const fromBalance = await db.get(`user:${fromUserId}:balance`) || 0;
+    if (fromBalance < amount) {
+        throw new Error('Saldo insuficiente');
+    }
+    
+    // Executar transferência
+    await db.add(`user:${fromUserId}:balance`, -amount);
+    await db.add(`user:${toUserId}:balance`, amount);
+    
+    // Registrar transação
+    await db.add('stats:total_transactions', 1);
+    await db.add('stats:total_volume', amount);
+    
+    return {
+        fromBalance: await db.get(`user:${fromUserId}:balance`),
+        toBalance: await db.get(`user:${toUserId}:balance`)
+    };
+}
+```
+
+### 📈 **Métricas de Aplicação**
+```javascript
+// Middleware para contar requests
+async function trackRequest(req, res, next) {
+    const endpoint = req.path;
+    const method = req.method;
+    
+    // Contar requests totais
+    await db.add('metrics:total_requests', 1);
+    
+    // Contar por endpoint
+    await db.add(`metrics:endpoints:${endpoint}`, 1);
+    
+    // Contar por método
+    await db.add(`metrics:methods:${method}`, 1);
+    
+    next();
+}
+```
+
+### 🎮 **Sistema de Experiência**
+```javascript
+async function addExperience(playerId, exp, source) {
+    const playerKey = `player:${playerId}`;
+    const player = await db.get(playerKey) || { level: 1, exp: 0 };
+    
+    // Adicionar experiência
+    const newExp = await db.add(`${playerKey}:exp`, exp);
+    
+    // Verificar level up
+    const expRequired = player.level * 100;
+    if (newExp >= expRequired) {
+        await db.add(`${playerKey}:level`, 1);
+        await db.set(`${playerKey}:exp`, newExp - expRequired);
+        
+        // Evento de level up
+        await db.push(`${playerKey}:events`, {
+            type: 'level_up',
+            newLevel: player.level + 1,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    return {
+        exp: newExp,
+        level: await db.get(`${playerKey}:level`),
+        source
+    };
+}
+```
+
+### 📊 **Analytics em Tempo Real**
+```javascript
+class RealTimeAnalytics {
+    constructor(db) {
+        this.db = db;
+    }
+    
+    async trackEvent(event, userId = null) {
+        const timestamp = new Date();
+        const hour = timestamp.getHours();
+        const date = timestamp.toISOString().split('T')[0];
+        
+        // Contadores gerais
+        await this.db.add(`analytics:${event}:total`, 1);
+        await this.db.add(`analytics:${event}:today`, 1);
+        await this.db.add(`analytics:${event}:hour:${hour}`, 1);
+        
+        // Contadores por usuário
+        if (userId) {
+            await this.db.add(`analytics:${event}:user:${userId}`, 1);
+        }
+        
+        // Contadores por data
+        await this.db.add(`analytics:${event}:date:${date}`, 1);
+    }
+    
+    async getStats(event) {
+        return {
+            total: await this.db.get(`analytics:${event}:total`) || 0,
+            today: await this.db.get(`analytics:${event}:today`) || 0,
+            hourly: await this.getHourlyStats(event)
+        };
+    }
+    
+    async getHourlyStats(event) {
+        const stats = {};
+        for (let hour = 0; hour < 24; hour++) {
+            stats[hour] = await this.db.get(`analytics:${event}:hour:${hour}`) || 0;
+        }
+        return stats;
+    }
+}
+
+// Uso
+const analytics = new RealTimeAnalytics(db);
+await analytics.trackEvent('page_view', 'user123');
+await analytics.trackEvent('click', 'user123');
+```
+
+## Performance
+
+- **Complexidade**: O(1) - Tempo constante
+- **Uso de memória**: Mínimo
+- **Operação atômica**: Segura para concorrência
+- **Ideal para**: Contadores e métricas
+
+## ⚠️ Considerações
+
+### Validação de Tipos
+```javascript
+async function safeAdd(key, value) {
+    // Verificar se é número
+    if (typeof value !== 'number' || isNaN(value)) {
+        throw new Error('Valor deve ser um número válido');
+    }
+    
+    // Verificar se a chave existe e é número
+    const current = await db.get(key);
+    if (current !== undefined && typeof current !== 'number') {
+        throw new Error('Chave existe mas não é numérica');
+    }
+    
+    return await db.add(key, value);
+}
+```
+
+### Limites de Precisão
+```javascript
+// Para valores decimais, considere precisão
+async function addCurrency(key, amount) {
+    // Trabalhar com centavos para evitar problemas de float
+    const centavos = Math.round(amount * 100);
+    const result = await db.add(key, centavos);
+    
+    // Retornar em reais
+    return result / 100;
+}
+```
+
+## Notas
+
+- Cria a chave se não existir (valor inicial será o valor somado)
+- Funciona apenas com valores numéricos
+- Operação atômica em todos os drivers
+- Valor negativo pode ser usado para subtração
+- Ideal para contadores e métricas em tempo real

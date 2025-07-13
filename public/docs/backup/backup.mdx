@@ -1,0 +1,98 @@
+
+---
+title: backup()
+description: Cria backup completo dos dados
+---
+
+# backup()
+
+Cria um backup completo dos dados do banco, incluindo metadados e informações de integridade.
+
+## Sintaxe
+
+```typescript
+await db.backup(options?: BackupOptions): Promise<BackupInfo>
+```
+
+## Parâmetros
+
+- `options` (opcional): Configurações do backup
+  - `path`: Caminho personalizado para o backup
+  - `compress`: Comprimir o backup (padrão: true)
+  - `metadata`: Incluir metadados (padrão: true)
+
+## Retorno
+
+Informações do backup criado:
+```typescript
+{
+  id: string,
+  timestamp: Date,
+  size: number,
+  path: string,
+  checksum: string
+}
+```
+
+## Exemplos
+
+### Backup Simples
+```javascript
+const backupInfo = await db.backup();
+console.log(`Backup criado: ${backupInfo.id}`);
+console.log(`Tamanho: ${backupInfo.size} bytes`);
+console.log(`Localização: ${backupInfo.path}`);
+```
+
+### Backup Customizado
+```javascript
+const backupInfo = await db.backup({
+  path: './backups/custom-backup.db',
+  compress: false,
+  metadata: true
+});
+```
+
+### Backup Automático
+```javascript
+// Configurar backup automático a cada hora
+setInterval(async () => {
+  try {
+    const backup = await db.backup();
+    console.log(`Backup automático: ${backup.id}`);
+  } catch (error) {
+    console.error('Erro no backup automático:', error);
+  }
+}, 60 * 60 * 1000); // 1 hora
+```
+
+### Backup com Validação
+```javascript
+const backup = await db.backup();
+
+// Verificar integridade
+if (backup.checksum) {
+  console.log('Backup criado com checksum de integridade');
+  console.log(`Checksum: ${backup.checksum}`);
+}
+```
+
+## Configuração Automática
+
+```javascript
+const db = new HelperDB({
+  backup: {
+    auto: true,
+    interval: '1h', // A cada hora
+    maxBackups: 10, // Manter apenas 10 backups
+    path: './backups'
+  }
+});
+```
+
+## Casos de Uso
+
+- Backup antes de operações críticas
+- Backup agendado automático
+- Backup antes de atualizações
+- Snapshot para desenvolvimento

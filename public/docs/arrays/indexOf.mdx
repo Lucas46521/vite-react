@@ -1,0 +1,83 @@
+
+# indexOf()
+
+Retorna o primeiro índice onde um elemento específico é encontrado no array.
+
+## Sintaxe
+
+```javascript
+await db.indexOf(key, searchElement, fromIndex)
+```
+
+## Parâmetros
+
+- `key` (string): Chave do array no banco
+- `searchElement` (any): Elemento a ser procurado
+- `fromIndex` (number, opcional): Índice para começar a busca
+
+## Retorno
+
+Retorna o índice do elemento ou -1 se não encontrado.
+
+## Exemplos
+
+### Uso Básico
+
+```javascript
+await db.set('frutas', ['apple', 'banana', 'orange', 'apple']);
+
+const indice = await db.indexOf('frutas', 'banana');
+console.log(indice); // 1
+
+const naoEncontrado = await db.indexOf('frutas', 'grape');
+console.log(naoEncontrado); // -1
+```
+
+### Com fromIndex
+
+```javascript
+await db.set('numeros', [1, 2, 3, 2, 4, 2]);
+
+// Busca a partir do índice 2
+const indice = await db.indexOf('numeros', 2, 2);
+console.log(indice); // 3 (terceira ocorrência de 2)
+```
+
+### Com Objetos
+
+```javascript
+const usuarios = [
+  { id: 1, nome: 'João' },
+  { id: 2, nome: 'Maria' },
+  { id: 3, nome: 'Pedro' }
+];
+
+await db.set('usuarios', usuarios);
+
+// Busca por referência exata
+const usuario = usuarios[1];
+const indice = await db.indexOf('usuarios', usuario);
+console.log(indice); // 1
+```
+
+### Busca com Strings
+
+```javascript
+await db.set('palavras', ['hello', 'world', 'javascript', 'hello']);
+
+// Primeira ocorrência
+const primeiro = await db.indexOf('palavras', 'hello');
+console.log(primeiro); // 0
+
+// Busca a partir do índice 1
+const segundo = await db.indexOf('palavras', 'hello', 1);
+console.log(segundo); // 3
+```
+
+## Notas
+
+- Usa comparação estrita (===) para primitivos
+- Para objetos, compara por referência
+- Retorna apenas o primeiro índice encontrado
+- Se a chave não existir, retorna -1
+- Se o valor não for um array, converte para array antes da busca

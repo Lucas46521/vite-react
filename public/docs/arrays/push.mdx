@@ -1,0 +1,222 @@
+
+
+# push(key, ...values)
+
+Adiciona um ou mais elementos ao final de um array.
+
+## Sintaxe
+
+```javascript
+const newLength = await db.push(key, ...values)
+```
+
+## Parâmetros
+
+- `key` (string): A chave do array
+- `...values` (any[]): Valores a serem adicionados
+
+## Retorno
+
+- `Promise<number>`: O novo comprimento do array
+
+## Exemplos
+
+### Exemplo Básico
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Criar array inicial
+await db.set('lista', [1, 2, 3]);
+
+// Adicionar um elemento
+const novoTamanho = await db.push('lista', 4);
+console.log(novoTamanho); // 4
+
+const lista = await db.get('lista');
+console.log(lista); // [1, 2, 3, 4]
+```
+
+### Múltiplos Elementos
+```javascript
+// Adicionar múltiplos elementos de uma vez
+await db.set('frutas', ['maçã', 'banana']);
+
+const tamanho = await db.push('frutas', 'laranja', 'uva', 'pêra');
+console.log(tamanho); // 5
+
+const frutas = await db.get('frutas');
+console.log(frutas); // ['maçã', 'banana', 'laranja', 'uva', 'pêra']
+```
+
+### Arrays Aninhados
+```javascript
+await db.set('usuario', {
+    nome: 'João',
+    hobbies: ['leitura', 'música']
+});
+
+// Adicionar hobby usando notação de ponto
+await db.push('usuario.hobbies', 'programação', 'culinária');
+
+const usuario = await db.get('usuario');
+console.log(usuario.hobbies); // ['leitura', 'música', 'programação', 'culinária']
+```
+
+### Diferentes Tipos de Dados
+```javascript
+await db.set('misto', []);
+
+// Adicionar diferentes tipos
+await db.push('misto', 
+    'string',
+    42,
+    true,
+    { nome: 'objeto' },
+    [1, 2, 3],
+    null
+);
+
+const misto = await db.get('misto');
+console.log(misto); 
+// ['string', 42, true, { nome: 'objeto' }, [1, 2, 3], null]
+```
+
+## Comportamentos Especiais
+
+### Array Inexistente
+```javascript
+// Se a chave não existir, cria um novo array
+const tamanho = await db.push('novo_array', 'primeiro');
+console.log(tamanho); // 1
+
+const array = await db.get('novo_array');
+console.log(array); // ['primeiro']
+```
+
+### Valor Não-Array
+```javascript
+// Se o valor não for array, converte para array
+await db.set('nao_array', 'string');
+
+await db.push('nao_array', 'novo_item');
+const resultado = await db.get('nao_array');
+console.log(resultado); // ['string', 'novo_item']
+```
+
+### Arrays de Objetos
+```javascript
+await db.set('usuarios', []);
+
+await db.push('usuarios', 
+    { id: 1, nome: 'João' },
+    { id: 2, nome: 'Maria' },
+    { id: 3, nome: 'Pedro' }
+);
+
+const usuarios = await db.get('usuarios');
+console.log(usuarios);
+// [
+//   { id: 1, nome: 'João' },
+//   { id: 2, nome: 'Maria' },
+//   { id: 3, nome: 'Pedro' }
+// ]
+```
+
+## Casos de Uso Práticos
+
+### Sistema de Log
+```javascript
+async function adicionarLog(tipo, mensagem) {
+    const entrada = {
+        timestamp: new Date().toISOString(),
+        tipo,
+        mensagem
+    };
+    
+    return await db.push('logs', entrada);
+}
+
+await adicionarLog('info', 'Usuário logado');
+await adicionarLog('error', 'Falha na conexão');
+```
+
+### Lista de Tarefas
+```javascript
+async function adicionarTarefa(titulo, prioridade = 'normal') {
+    const tarefa = {
+        id: Date.now(),
+        titulo,
+        prioridade,
+        concluida: false,
+        criadaEm: new Date()
+    };
+    
+    return await db.push('tarefas', tarefa);
+}
+
+await adicionarTarefa('Estudar JavaScript', 'alta');
+await adicionarTarefa('Fazer compras', 'baixa');
+```
+
+### Histórico de Transações
+```javascript
+async function registrarTransacao(tipo, valor, descricao) {
+    const transacao = {
+        id: crypto.randomUUID(),
+        tipo, // 'entrada' ou 'saida'
+        valor,
+        descricao,
+        data: new Date(),
+        saldo: await calcularSaldoAtual()
+    };
+    
+    await db.push('transacoes', transacao);
+    return transacao;
+}
+
+await registrarTransacao('entrada', 1500, 'Salário');
+await registrarTransacao('saida', 50, 'Almoço');
+```
+
+## Performance
+
+```javascript
+// ✅ Eficiente - adicionar múltiplos de uma vez
+await db.push('lista', item1, item2, item3);
+
+// ❌ Menos eficiente - múltiplas chamadas
+await db.push('lista', item1);
+await db.push('lista', item2);
+await db.push('lista', item3);
+
+// ✅ Para muitos items, use setMany
+const items = Array.from({length: 1000}, (_, i) => `item${i}`);
+await db.push('lista', ...items);
+```
+
+## Limitações
+
+- ⚠️ Não funciona com chaves que não sejam arrays após conversão
+- ⚠️ Performance pode degradar com arrays muito grandes (>10k items)
+- ⚠️ Operação atômica - falha completa se algum valor for inválido
+
+## Eventos Emitidos
+
+```javascript
+db.on('beforePush', (data) => {
+    console.log('Adicionando ao array:', data.key, data.values);
+});
+
+db.on('push', (data) => {
+    console.log('Array atualizado:', data.key, 'Novo tamanho:', data.newLength);
+});
+```
+
+## Veja Também
+
+- [pop](./pop.mdx) - Remover do final
+- [unshift](./unshift.mdx) - Adicionar ao início
+- [splice](./splice.mdx) - Operações de posição
+- [pull](./pull.mdx) - Remover por valor
+

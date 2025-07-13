@@ -1,0 +1,375 @@
+
+# Validação de Schema
+
+O HelperDB oferece um sistema robusto de validação que garante a integridade e consistência dos dados armazenados.
+
+## Configuração Básica
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './data.sqlite',
+    schema: {
+        enabled: true,
+        strict: false,
+        schemas: {
+            'user:*': {
+                type: 'object',
+                properties: {
+                    name: { type: 'string', required: true },
+                    email: { type: 'string', format: 'email' },
+                    age: { type: 'number', minimum: 0 }
+                }
+            }
+        }
+    }
+});
+```
+
+## Definindo Schemas
+
+### Schema Básico
+```javascript
+const userSchema = {
+    type: 'object',
+    properties: {
+        name: { 
+            type: 'string', 
+            required: true,
+            minLength: 2,
+            maxLength: 50
+        },
+        email: { 
+            type: 'string', 
+            format: 'email',
+            required: true
+        },
+        age: { 
+            type: 'number', 
+            minimum: 0, 
+            maximum: 120 
+        },
+        status: {
+            type: 'string',
+            enum: ['active', 'inactive', 'pending']
+        }
+    }
+};
+```
+
+### Schema Aninhado
+```javascript
+const postSchema = {
+    type: 'object',
+    properties: {
+        title: { type: 'string', required: true },
+        content: { type: 'string', required: true },
+        author: {
+            type: 'object',
+            properties: {
+                id: { type: 'number', required: true },
+                name: { type: 'string', required: true }
+            }
+        },
+        tags: {
+            type: 'array',
+            items: { type: 'string' },
+            maxItems: 5
+        }
+    }
+};
+```
+
+## Padrões de Chave
+
+### Wildcards
+```javascript
+const schemas = {
+    'user:*': userSchema,           // user:1, user:abc, etc.
+    'post:*': postSchema,           // post:1, post:hello, etc.
+    'config:app:*': configSchema,   // config:app:theme, etc.
+    '*:settings': settingsSchema    // user:settings, admin:settings
+};
+```
+
+### Regex
+```javascript
+const schemas = {
+    '/^user:\\d+$/': userSchema,     // user:123, user:456
+    '/^post:[a-z-]+$/': postSchema,  // post:hello-world
+    '/^cache:.+$/': cacheSchema      // cache:qualquer-coisa
+};
+```
+
+## Validadores Personalizados
+
+### Validador de Função
+```javascript
+const db = new HelperDB({
+    schema: {
+        enabled: true,
+        validators: {
+            cpf: (value) => {
+                // Validação de CPF
+                return /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(value);
+            },
+            futureDate: (value) => {
+                return new Date(value) > new Date();
+            }
+        },
+        schemas: {
+            'person:*': {
+                type: 'object',
+                properties: {
+                    cpf: { 
+                        type: 'string', 
+                        validator: 'cpf' 
+                    },
+                    birthDate: { 
+                        type: 'string', 
+                        format: 'date' 
+                    },
+                    appointmentDate: {
+                        type: 'string',
+                        validator: 'futureDate'
+                    }
+                }
+            }
+        }
+    }
+});
+```
+
+### Validação Assíncrona
+```javascript
+const asyncValidators = {
+    uniqueEmail: async (email, key, db) => {
+        const existing = await db.search(`user:*`);
+        return !existing.some(([k, user]) => 
+            k !== key && user.email === email
+        );
+    }
+};
+
+const db = new HelperDB({
+    schema: {
+        enabled: true,
+        asyncValidators,
+        schemas: {
+            'user:*': {
+                type: 'object',
+                properties: {
+                    email: {
+                        type: 'string',
+                        format: 'email',
+                        asyncValidator: 'uniqueEmail'
+                    }
+                }
+            }
+        }
+    }
+});
+```
+
+## Modos de Validação
+
+### Modo Strict
+```javascript
+const db = new HelperDB({
+    schema: {
+        enabled: true,
+        strict: true, // Rejeita dados não conformes
+        schemas: { /* ... */ }
+    }
+});
+
+// Isso gerará erro se não conformar com o schema
+await db.set('user:1', { name: 'João' }); // ❌ Email obrigatório
+```
+
+### Modo Permissivo
+```javascript
+const db = new HelperDB({
+    schema: {
+        enabled: true,
+        strict: false, // Permite dados não conformes
+        onValidationError: (error, key, value) => {
+            console.warn(`Validação falhou para ${key}:`, error);
+        }
+    }
+});
+
+// Isso será salvo, mas gerará warning
+await db.set('user:1', { name: 'João' }); // ⚠️ Warning, mas salva
+```
+
+## Métodos de Validação
+
+### Validar Manualmente
+```javascript
+// Validar antes de salvar
+const isValid = await db.schema.validate('user:1', {
+    name: 'João',
+    email: 'joao@email.com',
+    age: 30
+});
+
+if (isValid) {
+    await db.set('user:1', userData);
+}
+```
+
+### Obter Erros de Validação
+```javascript
+const result = await db.schema.validateWithErrors('user:1', userData);
+console.log(result);
+// {
+//   valid: false,
+//   errors: [
+//     { field: 'email', message: 'Invalid email format' },
+//     { field: 'age', message: 'Must be at least 0' }
+//   ]
+// }
+```
+
+### Validar Schema
+```javascript
+// Verificar se schema é válido
+const schemaValid = db.schema.validateSchema(userSchema);
+console.log(schemaValid); // true ou false
+```
+
+## Transformações
+
+### Auto-transformação
+```javascript
+const db = new HelperDB({
+    schema: {
+        enabled: true,
+        autoTransform: true,
+        schemas: {
+            'user:*': {
+                type: 'object',
+                properties: {
+                    name: { 
+                        type: 'string',
+                        transform: (value) => value.trim().toLowerCase()
+                    },
+                    age: { 
+                        type: 'number',
+                        transform: (value) => parseInt(value)
+                    },
+                    createdAt: {
+                        type: 'string',
+                        default: () => new Date().toISOString()
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Os dados serão automaticamente transformados
+await db.set('user:1', {
+    name: '  JOÃO  ', // → 'joão'
+    age: '30'         // → 30
+    // createdAt será adicionado automaticamente
+});
+```
+
+## Exemplo Completo
+
+```javascript
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './app.sqlite',
+    schema: {
+        enabled: true,
+        strict: false,
+        autoTransform: true,
+        
+        // Validadores personalizados
+        validators: {
+            strongPassword: (password) => {
+                return password.length >= 8 && 
+                       /[A-Z]/.test(password) && 
+                       /[0-9]/.test(password);
+            }
+        },
+        
+        // Schemas
+        schemas: {
+            'user:*': {
+                type: 'object',
+                properties: {
+                    name: { 
+                        type: 'string', 
+                        required: true,
+                        minLength: 2,
+                        transform: (v) => v.trim()
+                    },
+                    email: { 
+                        type: 'string', 
+                        format: 'email',
+                        required: true,
+                        transform: (v) => v.toLowerCase()
+                    },
+                    password: {
+                        type: 'string',
+                        validator: 'strongPassword',
+                        required: true
+                    },
+                    role: {
+                        type: 'string',
+                        enum: ['user', 'admin', 'moderator'],
+                        default: 'user'
+                    },
+                    createdAt: {
+                        type: 'string',
+                        default: () => new Date().toISOString()
+                    }
+                }
+            },
+            
+            'session:*': {
+                type: 'object',
+                properties: {
+                    userId: { type: 'number', required: true },
+                    token: { type: 'string', required: true },
+                    expiresAt: { 
+                        type: 'string', 
+                        format: 'date-time',
+                        required: true
+                    }
+                }
+            }
+        },
+        
+        // Callbacks
+        onValidationError: (error, key, value) => {
+            console.warn(`❌ Validação falhou para ${key}:`, error.message);
+        },
+        
+        onTransform: (key, oldValue, newValue) => {
+            console.log(`🔄 Transformado ${key}:`, { oldValue, newValue });
+        }
+    }
+});
+
+await db.init();
+
+// Uso com validação automática
+try {
+    await db.set('user:1', {
+        name: '  João Silva  ',
+        email: 'JOAO@EMAIL.COM',
+        password: 'MinhaSenh@123',
+        role: 'admin'
+    });
+    console.log('✅ Usuário criado com sucesso');
+} catch (error) {
+    console.error('❌ Erro de validação:', error.message);
+}
+```

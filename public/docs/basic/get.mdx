@@ -1,0 +1,147 @@
+
+
+# get(key)
+
+Obtém um valor da base de dados.
+
+## Sintaxe
+
+```javascript
+const value = await db.get(key)
+```
+
+## Parâmetros
+
+- `key` (string): A chave do valor a ser obtido
+
+## Retorno
+
+- `Promise<any>`: O valor armazenado ou `null` se não existir
+
+## Exemplos
+
+### Exemplo Básico
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Salvar dados
+await db.set('usuario', { nome: 'João', idade: 25 });
+
+// Obter dados
+const usuario = await db.get('usuario');
+console.log(usuario); // { nome: 'João', idade: 25 }
+
+// Valor inexistente
+const inexistente = await db.get('nao_existe');
+console.log(inexistente); // null
+```
+
+### Usando Notação de Ponto
+```javascript
+await db.set('usuario', {
+    nome: 'João',
+    configuracoes: {
+        tema: 'escuro',
+        idioma: 'pt-BR'
+    },
+    hobbies: ['programação', 'leitura']
+});
+
+// Obter propriedades específicas
+const nome = await db.get('usuario.nome');
+console.log(nome); // 'João'
+
+const tema = await db.get('usuario.configuracoes.tema');
+console.log(tema); // 'escuro'
+
+const primeiroHobby = await db.get('usuario.hobbies.0');
+console.log(primeiroHobby); // 'programação'
+```
+
+### Valores Padrão
+```javascript
+// Usando operador OR para valor padrão
+const config = await db.get('configuracoes') || {
+    tema: 'claro',
+    idioma: 'pt-BR'
+};
+
+// Função auxiliar para valor padrão
+function getWithDefault(key, defaultValue) {
+    return db.get(key).then(value => value !== null ? value : defaultValue);
+}
+
+const pontos = await getWithDefault('usuario.pontos', 0);
+```
+
+### Tipagem TypeScript
+```typescript
+interface Usuario {
+    nome: string;
+    idade: number;
+    ativo: boolean;
+}
+
+// Especificar tipo de retorno
+const usuario = await db.get<Usuario>('usuario');
+// usuario: Usuario | null
+
+// Com verificação de tipo
+if (usuario) {
+    console.log(usuario.nome); // TypeScript sabe que é string
+}
+```
+
+## Comportamentos Especiais
+
+### Objetos Aninhados
+```javascript
+await db.set('dados', {
+    a: { b: { c: 'valor' } }
+});
+
+// Todos retornam o mesmo resultado
+const valor1 = await db.get('dados.a.b.c');
+const valor2 = await db.get('dados').then(d => d.a.b.c);
+console.log(valor1 === valor2); // true
+```
+
+### Arrays
+```javascript
+await db.set('lista', [1, 2, 3, 4, 5]);
+
+const lista = await db.get('lista'); // [1, 2, 3, 4, 5]
+const item = await db.get('lista.2'); // 3
+const slice = await db.get('lista').then(l => l.slice(1, 3)); // [2, 3]
+```
+
+## Performance
+
+```javascript
+// ✅ Eficiente - acesso direto
+const valor = await db.get('chave.propriedade');
+
+// ❌ Menos eficiente - múltiplas consultas
+const objeto = await db.get('chave');
+const valor = objeto.propriedade;
+```
+
+## Eventos Emitidos
+
+```javascript
+db.on('beforeGet', (data) => {
+    console.log('Buscando dados:', data.key);
+});
+
+db.on('get', (data) => {
+    console.log('Dados obtidos:', data.key, data.value);
+});
+```
+
+## Veja Também
+
+- [set](./set.mdx) - Definir valores
+- [has](./has.mdx) - Verificar existência
+- [all](./all.mdx) - Obter todos os dados
+

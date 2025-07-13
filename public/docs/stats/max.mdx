@@ -1,0 +1,123 @@
+
+# max()
+
+Encontra o valor máximo em um conjunto de dados numéricos.
+
+## Sintaxe
+
+```javascript
+await db.max(key?)
+```
+
+## Parâmetros
+
+- `key` (string, opcional): Chave específica para buscar o valor máximo. Se omitida, busca em todos os valores numéricos.
+
+## Retorno
+
+- `Promise<number>`: O valor máximo encontrado, ou `0` se nenhum valor numérico for encontrado.
+
+## Exemplos
+
+### Valor máximo de uma chave específica
+
+```javascript
+// Definir alguns valores
+await db.set('vendas.janeiro', [100, 250, 180, 300, 150]);
+await db.set('vendas.fevereiro', [200, 180, 220, 280, 190]);
+
+// Encontrar o valor máximo nas vendas de janeiro
+const maxJaneiro = await db.max('vendas.janeiro');
+console.log(maxJaneiro); // 300
+```
+
+### Valor máximo em todos os dados
+
+```javascript
+// Definir valores numéricos
+await db.set('temperatura.segunda', 25);
+await db.set('temperatura.terca', 28);
+await db.set('temperatura.quarta', 22);
+await db.set('pontuacao.jogador1', 1500);
+await db.set('pontuacao.jogador2', 2200);
+
+// Encontrar o valor máximo em todos os dados numéricos
+const maxGlobal = await db.max();
+console.log(maxGlobal); // 2200
+```
+
+### Com arrays de objetos
+
+```javascript
+// Definir dados de funcionários
+await db.set('funcionarios', [
+    { nome: 'João', salario: 5000 },
+    { nome: 'Maria', salario: 6500 },
+    { nome: 'Pedro', salario: 4800 }
+]);
+
+// Encontrar o maior salário
+const maiorSalario = await db.max('funcionarios.*.salario');
+console.log(maiorSalario); // 6500
+```
+
+### Tratamento de dados vazios
+
+```javascript
+// Buscar máximo em chave inexistente
+const maxInexistente = await db.max('chave.inexistente');
+console.log(maxInexistente); // 0
+
+// Buscar máximo em array vazio
+await db.set('lista.vazia', []);
+const maxVazio = await db.max('lista.vazia');
+console.log(maxVazio); // 0
+```
+
+## Casos de Uso
+
+### 1. Análise de Performance
+```javascript
+// Encontrar o melhor tempo de resposta
+await db.set('metricas.tempos', [120, 95, 180, 85, 200]);
+const melhorTempo = await db.max('metricas.tempos');
+console.log(`Melhor tempo: ${melhorTempo}ms`);
+```
+
+### 2. Gamificação
+```javascript
+// Encontrar a maior pontuação
+const recordeAtual = await db.max('pontuacoes');
+console.log(`Recorde atual: ${recordeAtual} pontos`);
+```
+
+### 3. Monitoramento de Sistema
+```javascript
+// Pico de uso de CPU
+await db.set('sistema.cpu.historico', [45, 67, 89, 92, 78, 56]);
+const picoCPU = await db.max('sistema.cpu.historico');
+console.log(`Pico de CPU: ${picoCPU}%`);
+```
+
+## Comportamento
+
+- **Valores não numéricos**: São ignorados no cálculo
+- **Arrays aninhados**: Suporta notação de ponto para acessar valores em arrays e objetos
+- **Performance**: Otimizado para grandes conjuntos de dados
+- **Tipo de retorno**: Sempre retorna um número
+
+## Métodos Relacionados
+
+- [`min()`](./min.mdx) - Encontra o valor mínimo
+- [`avg()`](./avg.mdx) - Calcula a média dos valores
+- [`sum()`](./sum.mdx) - Soma todos os valores
+- [`aggregate()`](./aggregate.mdx) - Realiza múltiplas operações estatísticas
+
+## Dicas de Performance
+
+```javascript
+// Para melhor performance com grandes datasets
+// Use chaves específicas em vez de busca global
+const max = await db.max('vendas.2024'); // ✅ Rápido
+const max = await db.max(); // ⚠️ Mais lento em grandes bases
+```

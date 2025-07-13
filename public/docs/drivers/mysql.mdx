@@ -1,0 +1,154 @@
+
+---
+title: MySQL Driver
+description: Configuração e uso do driver MySQL
+---
+
+# MySQL Driver
+
+Driver para conexão com bancos de dados MySQL, oferecendo alta performance e recursos avançados.
+
+## Instalação
+
+```bash
+npm install mysql2
+```
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helperdb');
+
+const db = new HelperDB({
+  driver: 'mysql',
+  mysql: {
+    host: 'localhost',
+    port: 3306,
+    user: 'username',
+    password: 'password',
+    database: 'helperdb',
+    connectionLimit: 10,
+    acquireTimeout: 60000,
+    timeout: 60000
+  }
+});
+
+await db.init();
+```
+
+## Opções de Configuração
+
+### Conexão Básica
+```javascript
+{
+  host: 'localhost',
+  port: 3306,
+  user: 'username',
+  password: 'password',
+  database: 'helperdb'
+}
+```
+
+### Conexão com Pool
+```javascript
+{
+  host: 'localhost',
+  port: 3306,
+  user: 'username',
+  password: 'password',
+  database: 'helperdb',
+  connectionLimit: 20,        // Máximo de conexões simultâneas
+  acquireTimeout: 60000,      // Timeout para obter conexão
+  timeout: 60000,             // Timeout de query
+  reconnect: true             // Reconectar automaticamente
+}
+```
+
+### Conexão SSL
+```javascript
+{
+  host: 'localhost',
+  port: 3306,
+  user: 'username',
+  password: 'password',
+  database: 'helperdb',
+  ssl: {
+    ca: fs.readFileSync('ca-cert.pem'),
+    key: fs.readFileSync('client-key.pem'),
+    cert: fs.readFileSync('client-cert.pem')
+  }
+}
+```
+
+## Características
+
+### ✅ Vantagens
+- Alta performance para grandes volumes
+- Suporte a transações ACID
+- Replicação e clustering
+- Backup e restore nativos
+- Índices automáticos para busca otimizada
+
+### ⚠️ Considerações
+- Requer servidor MySQL em execução
+- Configuração mais complexa
+- Dependência externa (mysql2)
+
+## Exemplos de Uso
+
+### Configuração para Produção
+```javascript
+const db = new HelperDB({
+  driver: 'mysql',
+  mysql: {
+    host: process.env.MYSQL_HOST,
+    port: parseInt(process.env.MYSQL_PORT) || 3306,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    connectionLimit: 20,
+    acquireTimeout: 60000,
+    timeout: 60000,
+    charset: 'utf8mb4',
+    timezone: 'local'
+  }
+});
+```
+
+### Múltiplas Conexões
+```javascript
+// Banco principal
+const mainDB = new HelperDB({
+  driver: 'mysql',
+  mysql: { /* configuração principal */ }
+});
+
+// Banco de cache
+const cacheDB = new HelperDB({
+  driver: 'mysql',
+  mysql: { 
+    database: 'cache_db',
+    /* outras configurações */
+  }
+});
+```
+
+## Monitoramento
+
+```javascript
+// Verificar saúde da conexão
+const health = await db.ping();
+console.log(`MySQL conectado - Latência: ${health.latency}ms`);
+
+// Estatísticas de conexão
+const stats = await db.stats();
+console.log('Conexões ativas:', stats.activeConnections);
+```
+
+## Casos de Uso Ideais
+
+- Aplicações enterprise com alta carga
+- Sistemas que requerem transações complexas
+- Aplicações com múltiplos serviços
+- Sistemas que precisam de replicação
+- Ambiente com administrador de banco dedicado

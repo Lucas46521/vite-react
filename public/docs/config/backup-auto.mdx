@@ -1,0 +1,244 @@
+
+# Backup Automático
+
+O HelperDB oferece um sistema robusto de backup automático que protege seus dados com agendamento flexível e limpeza inteligente.
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './data.sqlite',
+    backup: {
+        enabled: true,
+        interval: 3600000, // 1 hora
+        maxBackups: 10,
+        path: './backups',
+        compression: true
+    }
+});
+```
+
+## Opções de Backup
+
+### `enabled`
+- **Tipo**: `boolean`
+- **Padrão**: `false`
+- **Descrição**: Ativa/desativa backup automático
+
+### `interval`
+- **Tipo**: `number`
+- **Padrão**: `3600000` (1 hora)
+- **Descrição**: Intervalo entre backups em milissegundos
+
+### `maxBackups`
+- **Tipo**: `number`
+- **Padrão**: `10`
+- **Descrição**: Número máximo de backups mantidos
+
+### `path`
+- **Tipo**: `string`
+- **Padrão**: `'./backups'`
+- **Descrição**: Diretório para armazenar backups
+
+### `compression`
+- **Tipo**: `boolean`
+- **Padrão**: `true`
+- **Descrição**: Compressão dos arquivos de backup
+
+## Estratégias de Agendamento
+
+### Backup por Intervalo
+```javascript
+const db = new HelperDB({
+    backup: {
+        enabled: true,
+        interval: 1800000, // 30 minutos
+        maxBackups: 20
+    }
+});
+```
+
+### Backup por Horário
+```javascript
+const db = new HelperDB({
+    backup: {
+        enabled: true,
+        schedule: '0 */6 * * *', // A cada 6 horas
+        maxBackups: 15
+    }
+});
+```
+
+### Backup Condicional
+```javascript
+const db = new HelperDB({
+    backup: {
+        enabled: true,
+        condition: async (db) => {
+            // Backup apenas se houver muitas alterações
+            const stats = await db.getStats();
+            return stats.operations > 1000;
+        },
+        interval: 3600000
+    }
+});
+```
+
+## Configuração Avançada
+
+```javascript
+const db = new HelperDB({
+    backup: {
+        enabled: true,
+        interval: 3600000,
+        maxBackups: 10,
+        path: './backups',
+        compression: true,
+        
+        // Configurações avançadas
+        naming: 'timestamp', // 'timestamp' | 'sequential' | 'custom'
+        format: 'json', // 'json' | 'sql' | 'binary'
+        
+        // Backup incremental
+        incremental: true,
+        
+        // Verificação de integridade
+        checksum: true,
+        
+        // Callback personalizado
+        onBackup: async (info) => {
+            console.log(`Backup criado: ${info.path}`);
+            
+            // Enviar para cloud storage
+            await uploadToCloud(info.path);
+        },
+        
+        // Filtros
+        include: ['user:*', 'config:*'],
+        exclude: ['temp:*', 'cache:*']
+    }
+});
+```
+
+## Métodos de Controle
+
+### Backup Manual
+```javascript
+// Criar backup imediatamente
+const backupInfo = await db.backup.create();
+console.log(backupInfo);
+// {
+//   id: 'backup_20231215_143052',
+//   path: './backups/backup_20231215_143052.json.gz',
+//   size: 1024576,
+//   timestamp: 2023-12-15T14:30:52.123Z,
+//   checksum: 'abc123...'
+// }
+```
+
+### Listar Backups
+```javascript
+const backups = await db.backup.list();
+console.log(backups);
+// [
+//   {
+//     id: 'backup_20231215_143052',
+//     path: './backups/backup_20231215_143052.json.gz',
+//     size: 1024576,
+//     timestamp: 2023-12-15T14:30:52.123Z
+//   },
+//   // ...
+// ]
+```
+
+### Restaurar Backup
+```javascript
+// Restaurar backup específico
+await db.backup.restore('backup_20231215_143052');
+
+// Restaurar backup mais recente
+await db.backup.restoreLatest();
+```
+
+### Limpeza Manual
+```javascript
+// Limpar backups antigos
+await db.backup.cleanup();
+
+// Limpar backups específicos
+await db.backup.delete('backup_20231210_120000');
+```
+
+## Monitoramento
+
+### Eventos de Backup
+```javascript
+db.on('backup:started', (info) => {
+    console.log('Backup iniciado...');
+});
+
+db.on('backup:completed', (info) => {
+    console.log(`Backup concluído: ${info.path}`);
+});
+
+db.on('backup:failed', (error) => {
+    console.error('Falha no backup:', error);
+});
+
+db.on('backup:cleanup', (deletedCount) => {
+    console.log(`${deletedCount} backups antigos removidos`);
+});
+```
+
+### Estatísticas
+```javascript
+const stats = await db.backup.getStats();
+console.log(stats);
+// {
+//   total: 10,
+//   totalSize: 52428800, // bytes
+//   lastBackup: 2023-12-15T14:30:52.123Z,
+//   nextBackup: 2023-12-15T15:30:52.123Z,
+//   successRate: 0.98
+// }
+```
+
+## Exemplo Completo
+
+```javascript
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './production.sqlite',
+    backup: {
+        enabled: true,
+        interval: 1800000, // 30 minutos
+        maxBackups: 24, // Manter 12 horas de backups
+        path: './backups',
+        compression: true,
+        incremental: true,
+        
+        onBackup: async (info) => {
+            // Log do backup
+            console.log(`✅ Backup criado: ${info.id}`);
+            
+            // Notificar administradores se backup for muito grande
+            if (info.size > 100 * 1024 * 1024) { // 100MB
+                await notifyAdmins(`Backup grande detectado: ${info.size} bytes`);
+            }
+        }
+    }
+});
+
+await db.init();
+
+// Verificar status do backup
+setInterval(async () => {
+    const stats = await db.backup.getStats();
+    if (stats.successRate < 0.9) {
+        console.warn('⚠️ Taxa de sucesso do backup baixa:', stats.successRate);
+    }
+}, 300000); // A cada 5 minutos
+```

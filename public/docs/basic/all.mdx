@@ -1,0 +1,266 @@
+
+# all() - Listar Todos os Dados
+
+O método `all()` retorna todos os dados armazenados no banco de dados como um array de pares chave-valor.
+
+## Sintaxe
+
+```javascript
+await db.all()
+```
+
+## Retorno
+
+- **Array**: Array de arrays `[key, value]` com todos os dados
+
+## Exemplos
+
+### Listagem Básica
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Adicionar alguns dados
+await db.set('user:1', { name: 'João', age: 30 });
+await db.set('user:2', { name: 'Maria', age: 25 });
+await db.set('config:theme', 'dark');
+
+// Listar todos os dados
+const allData = await db.all();
+console.log(allData);
+// [
+//   ['user:1', { name: 'João', age: 30 }],
+//   ['user:2', { name: 'Maria', age: 25 }],
+//   ['config:theme', 'dark']
+// ]
+```
+
+### Processamento de Dados
+```javascript
+const allData = await db.all();
+
+// Converter para objeto
+const dataObject = Object.fromEntries(allData);
+console.log(dataObject);
+// {
+//   'user:1': { name: 'João', age: 30 },
+//   'user:2': { name: 'Maria', age: 25 },
+//   'config:theme': 'dark'
+// }
+```
+
+### Filtragem Manual
+```javascript
+const allData = await db.all();
+
+// Filtrar apenas usuários
+const users = allData.filter(([key]) => key.startsWith('user:'));
+console.log(users);
+// [
+//   ['user:1', { name: 'João', age: 30 }],
+//   ['user:2', { name: 'Maria', age: 25 }]
+// ]
+
+// Filtrar por valor
+const adults = allData.filter(([key, value]) => 
+    key.startsWith('user:') && value.age >= 18
+);
+```
+
+### Backup de Dados
+```javascript
+async function backupDatabase() {
+    const allData = await db.all();
+    const backup = {
+        timestamp: new Date().toISOString(),
+        data: allData,
+        count: allData.length
+    };
+    
+    // Salvar backup
+    await db.set('backup:latest', backup);
+    
+    return backup;
+}
+```
+
+## Casos de Uso
+
+### 📊 **Estatísticas Gerais**
+```javascript
+async function getDatabaseStats() {
+    const allData = await db.all();
+    
+    const stats = {
+        totalEntries: allData.length,
+        categories: {},
+        dataTypes: {},
+        totalSize: 0
+    };
+    
+    for (const [key, value] of allData) {
+        // Categorizar por prefixo
+        const category = key.split(':')[0];
+        stats.categories[category] = (stats.categories[category] || 0) + 1;
+        
+        // Tipo de dados
+        const dataType = typeof value;
+        stats.dataTypes[dataType] = (stats.dataTypes[dataType] || 0) + 1;
+        
+        // Tamanho aproximado
+        stats.totalSize += JSON.stringify(value).length;
+    }
+    
+    return stats;
+}
+```
+
+### 🔄 **Migração de Dados**
+```javascript
+async function migrateData() {
+    const allData = await db.all();
+    
+    for (const [key, value] of allData) {
+        // Migrar estrutura antiga para nova
+        if (key.startsWith('user:') && !value.createdAt) {
+            value.createdAt = new Date().toISOString();
+            await db.set(key, value);
+        }
+    }
+    
+    console.log('Migração concluída');
+}
+```
+
+### 🧹 **Limpeza de Dados**
+```javascript
+async function cleanupOldData() {
+    const allData = await db.all();
+    const oneMonthAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    let cleaned = 0;
+    
+    for (const [key, value] of allData) {
+        // Remover dados temporários antigos
+        if (key.startsWith('temp:') && value.timestamp < oneMonthAgo) {
+            await db.delete(key);
+            cleaned++;
+        }
+    }
+    
+    console.log(`${cleaned} itens antigos removidos`);
+}
+```
+
+### 📤 **Exportação de Dados**
+```javascript
+async function exportData(format = 'json') {
+    const allData = await db.all();
+    
+    switch (format) {
+        case 'json':
+            return JSON.stringify(Object.fromEntries(allData), null, 2);
+        
+        case 'csv':
+            const csvRows = allData.map(([key, value]) => 
+                `${key},${JSON.stringify(value)}`
+            );
+            return ['Key,Value', ...csvRows].join('\n');
+        
+        case 'xml':
+            const xmlData = allData.map(([key, value]) => 
+                `<entry key="${key}">${JSON.stringify(value)}</entry>`
+            ).join('\n');
+            return `<database>\n${xmlData}\n</database>`;
+        
+        default:
+            throw new Error('Formato não suportado');
+    }
+}
+```
+
+### 🔍 **Busca Complexa**
+```javascript
+async function complexSearch(criteria) {
+    const allData = await db.all();
+    
+    return allData.filter(([key, value]) => {
+        // Busca por chave
+        if (criteria.keyPattern && !key.match(criteria.keyPattern)) {
+            return false;
+        }
+        
+        // Busca por tipo
+        if (criteria.valueType && typeof value !== criteria.valueType) {
+            return false;
+        }
+        
+        // Busca por propriedade
+        if (criteria.property && typeof value === 'object') {
+            const propValue = value[criteria.property];
+            if (propValue === undefined) return false;
+            
+            if (criteria.propertyValue && propValue !== criteria.propertyValue) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+}
+
+// Uso
+const activeUsers = await complexSearch({
+    keyPattern: /^user:/,
+    valueType: 'object',
+    property: 'status',
+    propertyValue: 'active'
+});
+```
+
+## Performance
+
+- **Complexidade**: O(n) - Depende do número de entradas
+- **Uso de memória**: Alto - carrega todos os dados
+- **Ideal para**: Análises, backups e operações em lote
+
+## ⚠️ Considerações
+
+### Uso em Grandes Bases
+```javascript
+// Para grandes volumes, considere paginação
+async function getAllPaginated(pageSize = 1000) {
+    const allData = await db.all();
+    const pages = [];
+    
+    for (let i = 0; i < allData.length; i += pageSize) {
+        pages.push(allData.slice(i, i + pageSize));
+    }
+    
+    return pages;
+}
+```
+
+### Monitoramento de Performance
+```javascript
+async function monitoredAll() {
+    const start = Date.now();
+    const data = await db.all();
+    const duration = Date.now() - start;
+    
+    console.log(`all() executado em ${duration}ms, ${data.length} itens`);
+    
+    if (duration > 1000) {
+        console.warn('⚠️ Operação all() demorada detectada');
+    }
+    
+    return data;
+}
+```
+
+## Notas
+
+- Carrega todos os dados na memória
+- Pode ser lento em bancos grandes
+- Útil para análises e backups
+- Retorna snapshot do momento da execução
+- Considere usar `search()` para queries específicas
