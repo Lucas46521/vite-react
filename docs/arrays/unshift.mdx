@@ -1,0 +1,345 @@
+
+# unshift()
+
+Adiciona um ou mais elementos ao início de um array.
+
+## Sintaxe
+
+```javascript
+await db.unshift(key, ...values)
+```
+
+## Parâmetros
+
+- **key** (string): A chave do array
+- **...values** (any): Os valores a serem adicionados ao início
+
+## Retorno
+
+- **Promise<number>**: O novo comprimento do array
+
+## Exemplos
+
+### Unshift Básico
+
+```javascript
+// Criar um array
+await db.set('lista', ['segundo', 'terceiro']);
+
+// Adicionar no início
+const novoTamanho = await db.unshift('lista', 'primeiro');
+console.log(novoTamanho); // 3
+
+// Verificar resultado
+const lista = await db.get('lista');
+console.log(lista); // ['primeiro', 'segundo', 'terceiro']
+```
+
+### Múltiplos Valores
+
+```javascript
+await db.set('numeros', [4, 5]);
+
+// Adicionar múltiplos valores no início
+await db.unshift('numeros', 1, 2, 3);
+
+const numeros = await db.get('numeros');
+console.log(numeros); // [1, 2, 3, 4, 5]
+```
+
+### Criação Automática de Array
+
+```javascript
+// Array não existe - será criado
+await db.unshift('novoArray', 'primeiro');
+
+const array = await db.get('novoArray');
+console.log(array); // ['primeiro']
+```
+
+### Unshift com Notação de Ponto
+
+```javascript
+await db.set('usuario', {
+    nome: 'João',
+    historico: ['acao2', 'acao3']
+});
+
+// Adicionar no início do histórico
+await db.unshift('usuario.historico', 'acao1');
+
+const usuario = await db.get('usuario');
+console.log(usuario.historico); // ['acao1', 'acao2', 'acao3']
+```
+
+### Sistema de Prioridades
+
+```javascript
+class FilaPrioridade {
+    constructor(db, chave) {
+        this.db = db;
+        this.chave = chave;
+    }
+    
+    // Adicionar tarefa normal (no final)
+    async adicionarTarefa(tarefa) {
+        return await this.db.push(this.chave, tarefa);
+    }
+    
+    // Adicionar tarefa prioritária (no início)
+    async adicionarPrioridade(tarefa) {
+        return await this.db.unshift(this.chave, { ...tarefa, prioridade: true });
+    }
+    
+    // Processar próxima tarefa
+    async processarProxima() {
+        return await this.db.shift(this.chave);
+    }
+    
+    // Ver todas as tarefas
+    async listarTarefas() {
+        return await this.db.get(this.chave) || [];
+    }
+}
+
+// Uso
+const fila = new FilaPrioridade(db, 'tarefas');
+
+await fila.adicionarTarefa({ id: 1, descricao: 'Tarefa normal' });
+await fila.adicionarTarefa({ id: 2, descricao: 'Outra tarefa' });
+
+// Tarefa urgente vai para o início
+await fila.adicionarPrioridade({ id: 3, descricao: 'URGENTE!' });
+
+const tarefas = await fila.listarTarefas();
+console.log(tarefas);
+// [
+//   { id: 3, descricao: 'URGENTE!', prioridade: true },
+//   { id: 1, descricao: 'Tarefa normal' },
+//   { id: 2, descricao: 'Outra tarefa' }
+// ]
+```
+
+### Breadcrumbs de Navegação
+
+```javascript
+class BreadcrumbManager {
+    constructor(db, userId) {
+        this.db = db;
+        this.chave = `navegacao.${userId}`;
+        this.maxItens = 10;
+    }
+    
+    async adicionarPagina(pagina) {
+        // Adicionar no início (página mais recente)
+        await this.db.unshift(this.chave, {
+            url: pagina.url,
+            titulo: pagina.titulo,
+            timestamp: new Date()
+        });
+        
+        // Manter apenas os últimos 10 itens
+        const navegacao = await this.db.get(this.chave) || [];
+        if (navegacao.length > this.maxItens) {
+            // Remove do final (mais antigos)
+            await this.db.set(this.chave, navegacao.slice(0, this.maxItens));
+        }
+    }
+    
+    async obterHistorico() {
+        return await this.db.get(this.chave) || [];
+    }
+    
+    async voltarPagina() {
+        // Remove a página atual (primeira)
+        return await this.db.shift(this.chave);
+    }
+}
+
+// Uso
+const breadcrumb = new BreadcrumbManager(db, 'user123');
+
+await breadcrumb.adicionarPagina({ url: '/home', titulo: 'Início' });
+await breadcrumb.adicionarPagina({ url: '/produtos', titulo: 'Produtos' });
+await breadcrumb.adicionarPagina({ url: '/produto/123', titulo: 'Produto XYZ' });
+
+const historico = await breadcrumb.obterHistorico();
+// Página mais recente no início
+```
+
+### Sistema de Notificações
+
+```javascript
+class GerenciadorNotificacoes {
+    constructor(db, userId) {
+        this.db = db;
+        this.chave = `notificacoes.${userId}`;
+    }
+    
+    async adicionarNotificacao(notificacao, urgente = false) {
+        const item = {
+            id: Date.now(),
+            ...notificacao,
+            timestamp: new Date(),
+            lida: false
+        };
+        
+        if (urgente) {
+            // Notificações urgentes vão para o início
+            await this.db.unshift(this.chave, item);
+        } else {
+            // Notificações normais vão para o final
+            await this.db.push(this.chave, item);
+        }
+        
+        return item.id;
+    }
+    
+    async marcarComoLida(notificacaoId) {
+        const notificacoes = await this.db.get(this.chave) || [];
+        const index = notificacoes.findIndex(n => n.id === notificacaoId);
+        
+        if (index !== -1) {
+            notificacoes[index].lida = true;
+            await this.db.set(this.chave, notificacoes);
+        }
+    }
+    
+    async obterNaoLidas() {
+        const notificacoes = await this.db.get(this.chave) || [];
+        return notificacoes.filter(n => !n.lida);
+    }
+    
+    async obterTodas() {
+        return await this.db.get(this.chave) || [];
+    }
+}
+
+// Uso
+const notificacoes = new GerenciadorNotificacoes(db, 'user123');
+
+// Notificação normal
+await notificacoes.adicionarNotificacao({
+    titulo: 'Nova mensagem',
+    conteudo: 'Você recebeu uma nova mensagem'
+});
+
+// Notificação urgente (vai para o início)
+await notificacoes.adicionarNotificacao({
+    titulo: 'ALERTA DE SEGURANÇA',
+    conteudo: 'Login suspeito detectado'
+}, true);
+
+const naoLidas = await notificacoes.obterNaoLidas();
+// Alerta aparece primeiro
+```
+
+### Cache com Prioridade
+
+```javascript
+class CachePrioritario {
+    constructor(db, chave, tamanhoMax = 100) {
+        this.db = db;
+        this.chave = chave;
+        this.tamanhoMax = tamanhoMax;
+    }
+    
+    async adicionar(item, prioridade = false) {
+        const entrada = {
+            ...item,
+            timestamp: new Date(),
+            acessos: 0
+        };
+        
+        if (prioridade) {
+            await this.db.unshift(this.chave, entrada);
+        } else {
+            await this.db.push(this.chave, entrada);
+        }
+        
+        // Manter tamanho do cache
+        await this.limitarTamanho();
+    }
+    
+    async acessar(id) {
+        const cache = await this.db.get(this.chave) || [];
+        const index = cache.findIndex(item => item.id === id);
+        
+        if (index !== -1) {
+            const item = cache[index];
+            item.acessos++;
+            item.ultimoAcesso = new Date();
+            
+            // Mover para o início (mais usado)
+            cache.splice(index, 1);
+            cache.unshift(item);
+            
+            await this.db.set(this.chave, cache);
+            return item;
+        }
+        
+        return null;
+    }
+    
+    async limitarTamanho() {
+        const cache = await this.db.get(this.chave) || [];
+        
+        if (cache.length > this.tamanhoMax) {
+            // Remover itens menos usados (do final)
+            const cacheReduzido = cache.slice(0, this.tamanhoMax);
+            await this.db.set(this.chave, cacheReduzido);
+        }
+    }
+}
+```
+
+## Casos de Uso
+
+- Sistemas de prioridade em filas
+- Histórico de navegação
+- Notificações urgentes
+- Cache com prioridade
+- Inserção no início de listas ordenadas
+
+## Notas
+
+- Modifica o array original
+- Reordena todos os índices existentes
+- Mais lento que `push()` para arrays grandes
+- Cria array automaticamente se não existir
+- Equivale ao `Array.prototype.unshift()` do JavaScript
+
+## Performance
+
+```javascript
+// ⚠️ unshift() é mais lento para arrays grandes
+// Considerações de performance:
+
+// Bom para arrays pequenos
+await db.unshift('pequenaLista', 'novo');
+
+// Para arrays grandes, considere alternativas:
+// 1. Usar push() e reverter depois se necessário
+// 2. Usar índices para simular ordem
+// 3. Reestruturar dados para evitar unshift frequente
+```
+
+## Comparação com Outros Métodos
+
+```javascript
+// unshift() - adiciona no início
+await db.set('lista', [2, 3]);
+await db.unshift('lista', 1); // [1, 2, 3]
+
+// push() - adiciona no final
+await db.set('lista', [1, 2]);
+await db.push('lista', 3); // [1, 2, 3]
+
+// shift() - remove do início
+await db.set('lista', [1, 2, 3]);
+await db.shift('lista'); // [2, 3]
+
+// pop() - remove do final
+await db.set('lista', [1, 2, 3]);
+await db.pop('lista'); // [1, 2]
+```

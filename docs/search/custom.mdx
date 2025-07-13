@@ -1,0 +1,256 @@
+
+# custom()
+
+Executa uma função de filtro personalizada para busca avançada e complexa em registros.
+
+## Sintaxe
+
+```javascript
+await db.custom(callback)
+```
+
+## Parâmetros
+
+- `callback` (function): Função de filtro personalizada que recebe cada registro
+
+## Callback
+
+```javascript
+function callback(value, key, allData) {
+  // value: valor do registro atual
+  // key: chave do registro atual
+  // allData: todos os dados do banco
+  // Retorna true para incluir o registro, false para excluir
+}
+```
+
+## Retorno
+
+Retorna um objeto com as chaves e valores que passaram no filtro.
+
+## Exemplos
+
+### Filtro Simples por Propriedade
+
+```javascript
+await db.set('user:1', { nome: 'João', idade: 25, ativo: true });
+await db.set('user:2', { nome: 'Maria', idade: 30, ativo: false });
+await db.set('user:3', { nome: 'Pedro', idade: 22, ativo: true });
+await db.set('config', { theme: 'dark' });
+
+// Filtrar apenas usuários ativos
+const usuariosAtivos = await db.custom((value, key) => {
+  return key.startsWith('user:') && value.ativo === true;
+});
+
+console.log(usuariosAtivos);
+// {
+//   'user:1': { nome: 'João', idade: 25, ativo: true },
+//   'user:3': { nome: 'Pedro', idade: 22, ativo: true }
+// }
+```
+
+### Filtro Complexo com Múltiplas Condições
+
+```javascript
+const produtos = {
+  'prod:1': { nome: 'Laptop', categoria: 'eletrônicos', preco: 2500, estoque: 5 },
+  'prod:2': { nome: 'Mouse', categoria: 'eletrônicos', preco: 50, estoque: 100 },
+  'prod:3': { nome: 'Livro', categoria: 'educação', preco: 30, estoque: 0 },
+  'prod:4': { nome: 'Monitor', categoria: 'eletrônicos', preco: 800, estoque: 3 }
+};
+
+for (const [key, value] of Object.entries(produtos)) {
+  await db.set(key, value);
+}
+
+// Produtos eletrônicos caros com estoque baixo
+const produtosCriticos = await db.custom((value, key) => {
+  return key.startsWith('prod:') && 
+         value.categoria === 'eletrônicos' && 
+         value.preco > 500 && 
+         value.estoque < 10;
+});
+
+console.log(produtosCriticos);
+// Retorna Laptop e Monitor
+```
+
+### Filtro por Data e Período
+
+```javascript
+const eventos = {
+  'event:1': { nome: 'Reunião', data: new Date('2024-01-15'), participantes: 10 },
+  'event:2': { nome: 'Workshop', data: new Date('2024-02-20'), participantes: 25 },
+  'event:3': { nome: 'Conferência', data: new Date('2024-01-30'), participantes: 100 }
+};
+
+for (const [key, value] of Object.entries(eventos)) {
+  await db.set(key, value);
+}
+
+// Eventos de janeiro de 2024 com mais de 5 participantes
+const eventosJaneiro = await db.custom((value, key) => {
+  if (!key.startsWith('event:')) return false;
+  
+  const data = new Date(value.data);
+  const isJaneiro2024 = data.getFullYear() === 2024 && data.getMonth() === 0;
+  
+  return isJaneiro2024 && value.participantes > 5;
+});
+
+console.log(Object.keys(eventosJaneiro)); // ['event:1', 'event:3']
+```
+
+### Filtro com Cálculos Complexos
+
+```javascript
+const vendedores = {
+  'vend:1': { nome: 'João', vendas: [100, 200, 150], meta: 400 },
+  'vend:2': { nome: 'Maria', vendas: [300, 250, 200], meta: 600 },
+  'vend:3': { nome: 'Pedro', vendas: [50, 80, 70], meta: 300 }
+};
+
+for (const [key, value] of Object.entries(vendedores)) {
+  await db.set(key, value);
+}
+
+// Vendedores que bateram a meta
+const vendedoresTopPerformance = await db.custom((value, key) => {
+  if (!key.startsWith('vend:')) return false;
+  
+  const totalVendas = value.vendas.reduce((sum, venda) => sum + venda, 0);
+  return totalVendas >= value.meta;
+});
+
+console.log(vendedoresTopPerformance);
+```
+
+### Filtro Usando Contexto Global
+
+```javascript
+await db.set('config:desconto_min', 1000);
+await db.set('produto:1', { nome: 'Laptop', preco: 2500 });
+await db.set('produto:2', { nome: 'Mouse', preco: 50 });
+await db.set('produto:3', { nome: 'Monitor', preco: 800 });
+
+// Produtos elegíveis para desconto (baseado na configuração)
+const produtosDesconto = await db.custom((value, key, allData) => {
+  if (!key.startsWith('produto:')) return false;
+  
+  const descontoMin = allData['config:desconto_min'] || 0;
+  return value.preco >= descontoMin;
+});
+
+console.log(produtosDesconto); // Apenas Laptop
+```
+
+### Filtro com Relacionamentos
+
+```javascript
+// Dados relacionados
+await db.set('user:1', { nome: 'João', departamento_id: 1 });
+await db.set('user:2', { nome: 'Maria', departamento_id: 2 });
+await db.set('user:3', { nome: 'Pedro', departamento_id: 1 });
+await db.set('dept:1', { nome: 'TI', ativo: true });
+await db.set('dept:2', { nome: 'RH', ativo: false });
+
+// Usuários de departamentos ativos
+const usuariosDeptAtivos = await db.custom((value, key, allData) => {
+  if (!key.startsWith('user:')) return false;
+  
+  const deptKey = `dept:${value.departamento_id}`;
+  const departamento = allData[deptKey];
+  
+  return departamento && departamento.ativo === true;
+});
+
+console.log(usuariosDeptAtivos); // Apenas João e Pedro
+```
+
+### Filtro com Agregações
+
+```javascript
+const pedidos = {
+  'order:1': { cliente_id: 1, valor: 100, status: 'completo' },
+  'order:2': { cliente_id: 1, valor: 200, status: 'completo' },
+  'order:3': { cliente_id: 2, valor: 50, status: 'pendente' },
+  'order:4': { cliente_id: 2, valor: 150, status: 'completo' }
+};
+
+for (const [key, value] of Object.entries(pedidos)) {
+  await db.set(key, value);
+}
+
+// Clientes com pedidos completos > R$ 250
+const clientesVip = await db.custom((value, key, allData) => {
+  if (!key.startsWith('order:')) return false;
+  
+  // Calcular total de pedidos completos do cliente
+  const totalCliente = Object.entries(allData)
+    .filter(([k, v]) => 
+      k.startsWith('order:') && 
+      v.cliente_id === value.cliente_id && 
+      v.status === 'completo'
+    )
+    .reduce((sum, [k, v]) => sum + v.valor, 0);
+  
+  return totalCliente > 250;
+});
+
+console.log(clientesVip); // Pedidos do cliente 1
+```
+
+### Funções Utilitárias
+
+```javascript
+// Função para filtros condicionais encadeados
+async function filtroCondicional(condicoes) {
+  return await db.custom((value, key, allData) => {
+    return condicoes.every(condicao => {
+      return condicao(value, key, allData);
+    });
+  });
+}
+
+// Exemplo de uso
+const condicoes = [
+  (value, key) => key.startsWith('user:'),
+  (value) => value.idade >= 18,
+  (value) => value.ativo === true
+];
+
+const usuariosAdultosAtivos = await filtroCondicional(condicoes);
+
+// Função para filtro com score personalizado
+async function filtroComScore(calculoScore, scoreMinimo) {
+  return await db.custom((value, key, allData) => {
+    const score = calculoScore(value, key, allData);
+    return score >= scoreMinimo;
+  });
+}
+
+// Exemplo: Score baseado em múltiplos fatores
+const calcularScore = (value, key) => {
+  if (!key.startsWith('user:')) return 0;
+  
+  let score = 0;
+  if (value.idade > 25) score += 10;
+  if (value.ativo) score += 20;
+  if (value.premium) score += 15;
+  
+  return score;
+};
+
+const usuariosScore = await filtroComScore(calcularScore, 25);
+```
+
+## Notas
+
+- Oferece máxima flexibilidade para filtros complexos
+- A função recebe acesso a todos os dados do banco
+- Pode ser usado para implementar lógica de negócio complexa
+- Performance pode ser afetada com grandes datasets
+- Útil para filtros que envolvem múltiplas chaves ou cálculos
+- Retorna um objeto com chave-valor (não um array)
+- Se nenhum registro atender aos critérios, retorna um objeto vazio

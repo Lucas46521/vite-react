@@ -1,0 +1,243 @@
+
+# regex()
+
+Filtra registros usando expressões regulares para busca avançada em strings.
+
+## Sintaxe
+
+```javascript
+await db.regex(field, pattern, flags)
+```
+
+## Parâmetros
+
+- `field` (string): Nome da propriedade a ser testada
+- `pattern` (string|RegExp): Padrão da expressão regular
+- `flags` (string, opcional): Flags da regex (i, g, m, etc.)
+
+## Retorno
+
+Retorna um array com os registros que atendem ao padrão especificado.
+
+## Exemplos
+
+### Busca por Padrões de Email
+
+```javascript
+const usuarios = [
+  { id: 1, nome: 'João', email: 'joao@gmail.com' },
+  { id: 2, nome: 'Maria', email: 'maria@hotmail.com' },
+  { id: 3, nome: 'Pedro', email: 'pedro@empresa.com.br' },
+  { id: 4, nome: 'Ana', email: 'ana@yahoo.com' },
+  { id: 5, nome: 'Carlos', email: 'carlos@outlook.com' }
+];
+
+await db.set('usuarios', usuarios);
+
+// Buscar emails do Gmail
+const gmailUsers = await db.regex('email', '@gmail\\.com$');
+console.log(gmailUsers); // [{ id: 1, nome: 'João', email: 'joao@gmail.com' }]
+
+// Buscar emails .com (ignoring case)
+const comEmails = await db.regex('email', '\\.com$', 'i');
+console.log(comEmails.length); // 4
+
+// Buscar emails brasileiros
+const brEmails = await db.regex('email', '\\.com\\.br$');
+console.log(brEmails); // [{ id: 3, nome: 'Pedro', email: 'pedro@empresa.com.br' }]
+```
+
+### Validação de Telefones
+
+```javascript
+const contatos = [
+  { nome: 'João', telefone: '(11) 99999-9999' },
+  { nome: 'Maria', telefone: '11999999999' },
+  { nome: 'Pedro', telefone: '+55 11 99999-9999' },
+  { nome: 'Ana', telefone: '1199999-9999' },
+  { nome: 'Carlos', telefone: 'telefone inválido' }
+];
+
+await db.set('contatos', contatos);
+
+// Buscar telefones com formato (xx) xxxxx-xxxx
+const formatoPadrao = await db.regex('telefone', '^\\(\\d{2}\\) \\d{5}-\\d{4}$');
+console.log(formatoPadrao.length); // 1
+
+// Buscar qualquer número válido (com ou sem formatação)
+const numerosValidos = await db.regex('telefone', '\\d{10,11}');
+console.log(numerosValidos.length); // 4
+```
+
+### Busca em Texto
+
+```javascript
+const artigos = [
+  { titulo: 'Introdução ao JavaScript', conteudo: 'JavaScript é uma linguagem...' },
+  { titulo: 'React para Iniciantes', conteudo: 'React é uma biblioteca...' },
+  { titulo: 'Node.js Backend', conteudo: 'Node.js permite executar JavaScript...' },
+  { titulo: 'Python vs JavaScript', conteudo: 'Comparando duas linguagens...' },
+  { titulo: 'CSS Avançado', conteudo: 'Técnicas avançadas de CSS...' }
+];
+
+await db.set('artigos', artigos);
+
+// Buscar artigos sobre JavaScript (case insensitive)
+const jsArtigos = await db.regex('titulo', 'javascript', 'i');
+console.log(jsArtigos.length); // 2
+
+// Buscar artigos que mencionam "linguagem" no conteúdo
+const linguagemArtigos = await db.regex('conteudo', 'linguagem', 'i');
+console.log(linguagemArtigos.length); // 2
+
+// Buscar títulos que começam com uma palavra específica
+const iniciantesArtigos = await db.regex('titulo', '^(Introdução|React)', 'i');
+console.log(iniciantesArtigos.length); // 2
+```
+
+### Validação de CPF
+
+```javascript
+const clientes = [
+  { nome: 'João', cpf: '123.456.789-01' },
+  { nome: 'Maria', cpf: '12345678901' },
+  { nome: 'Pedro', cpf: '111.222.333-44' },
+  { nome: 'Ana', cpf: 'cpf inválido' },
+  { nome: 'Carlos', cpf: '000.000.000-00' }
+];
+
+await db.set('clientes', clientes);
+
+// Buscar CPFs com formato xxx.xxx.xxx-xx
+const cpfFormatado = await db.regex('cpf', '^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$');
+console.log(cpfFormatado.length); // 3
+
+// Buscar CPFs apenas numéricos
+const cpfNumerico = await db.regex('cpf', '^\\d{11}$');
+console.log(cpfNumerico.length); // 1
+```
+
+### Busca por Códigos e IDs
+
+```javascript
+const produtos = [
+  { codigo: 'PROD-001', nome: 'Laptop' },
+  { codigo: 'SERV-002', nome: 'Suporte Técnico' },
+  { codigo: 'PROD-003', nome: 'Mouse' },
+  { codigo: 'DESC-004', nome: 'Desconto 10%' },
+  { codigo: 'PROD-005', nome: 'Teclado' }
+];
+
+await db.set('produtos', produtos);
+
+// Buscar produtos (códigos que começam com PROD)
+const produtos_only = await db.regex('codigo', '^PROD-');
+console.log(produtos_only.length); // 3
+
+// Buscar por padrão de código específico
+const codigosPadrao = await db.regex('codigo', '^[A-Z]{4}-\\d{3}$');
+console.log(codigosPadrao.length); // 5
+```
+
+### URLs e Domínios
+
+```javascript
+const links = [
+  { titulo: 'Google', url: 'https://www.google.com' },
+  { titulo: 'GitHub', url: 'https://github.com/usuario' },
+  { titulo: 'Site Local', url: 'http://localhost:3000' },
+  { titulo: 'API Externa', url: 'https://api.exemplo.com/v1' },
+  { titulo: 'FTP Server', url: 'ftp://files.empresa.com' }
+];
+
+await db.set('links', links);
+
+// Buscar URLs HTTPS
+const httpsLinks = await db.regex('url', '^https://');
+console.log(httpsLinks.length); // 3
+
+// Buscar subdomínios
+const subdomains = await db.regex('url', '://[^/]*\\.');
+console.log(subdomains.length); // 4
+
+// Buscar APIs (URLs com /api/)
+const apiLinks = await db.regex('url', '/api/');
+console.log(apiLinks.length); // 1
+```
+
+### Datas e Timestamps
+
+```javascript
+const eventos = [
+  { nome: 'Reunião', data: '2024-01-15' },
+  { nome: 'Apresentação', data: '15/01/2024' },
+  { nome: 'Workshop', data: '2024-02-20' },
+  { nome: 'Treinamento', data: '20-02-2024' },
+  { nome: 'Conferência', data: 'data inválida' }
+];
+
+await db.set('eventos', eventos);
+
+// Buscar datas no formato YYYY-MM-DD
+const isoFormat = await db.regex('data', '^\\d{4}-\\d{2}-\\d{2}$');
+console.log(isoFormat.length); // 2
+
+// Buscar datas de janeiro de 2024
+const janeiro2024 = await db.regex('data', '2024-01|01/.*2024|01-.*2024');
+console.log(janeiro2024.length); // 2
+```
+
+### Função Utilitária para Múltiplos Campos
+
+```javascript
+// Função para buscar em múltiplos campos
+async function buscaMultiCampos(chave, pattern, campos, flags = 'i') {
+  const dados = await db.get(chave);
+  
+  return dados.filter(item => {
+    return campos.some(campo => {
+      const valor = item[campo];
+      if (typeof valor === 'string') {
+        const regex = new RegExp(pattern, flags);
+        return regex.test(valor);
+      }
+      return false;
+    });
+  });
+}
+
+// Buscar "javascript" em título ou conteúdo
+const resultados = await buscaMultiCampos('artigos', 'javascript', ['titulo', 'conteudo']);
+
+// Função para validar formato
+async function validarFormato(chave, campo, patterns) {
+  const dados = await db.get(chave);
+  
+  return dados.map(item => ({
+    ...item,
+    valido: patterns.some(pattern => {
+      const regex = new RegExp(pattern);
+      return regex.test(item[campo]);
+    })
+  }));
+}
+
+// Validar múltiplos formatos de telefone
+const patternstelefone = [
+  '^\\(\\d{2}\\) \\d{5}-\\d{4}$',  // (11) 99999-9999
+  '^\\d{11}$',                      // 11999999999
+  '^\\+55 \\d{2} \\d{5}-\\d{4}$'   // +55 11 99999-9999
+];
+
+const contatosValidados = await validarFormato('contatos', 'telefone', patternstelefone);
+```
+
+## Notas
+
+- Suporta todas as flags padrão do JavaScript (i, g, m, s, u, y)
+- Para strings, use escape (\\) para caracteres especiais
+- Pode receber tanto string quanto objeto RegExp como padrão
+- Retorna array vazio se nenhum registro atender ao padrão
+- É case-sensitive por padrão (use flag 'i' para ignorar case)
+- Se a chave não existir, retorna um array vazio
+- Performance pode ser impactada com padrões complexos em grandes datasets

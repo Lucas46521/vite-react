@@ -1,0 +1,339 @@
+
+# sub() - Subtrair Valores
+
+O método `sub()` subtrai um valor numérico de uma chave existente. Se a chave não existir, ela será criada com o valor negativo especificado.
+
+## Sintaxe
+
+```javascript
+await db.sub(key, value)
+```
+
+## Parâmetros
+
+- **key** (`string`): A chave onde subtrair o valor
+- **value** (`number`): O valor a ser subtraído
+
+## Retorno
+
+- **number**: O novo valor após a subtração
+
+## Exemplos
+
+### Subtração Básica
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Definir valor inicial
+await db.set('balance', 1000);
+
+// Subtrair valor
+const newBalance = await db.sub('balance', 250);
+console.log(newBalance); // 750
+
+// Verificar valor atual
+const currentBalance = await db.get('balance');
+console.log(currentBalance); // 750
+```
+
+### Criação com Valor Negativo
+```javascript
+// Se a chave não existir, será criada com valor negativo
+const result = await db.sub('debt', 100);
+console.log(result); // -100
+
+// Subtrair mais
+await db.sub('debt', 50);
+const totalDebt = await db.get('debt');
+console.log(totalDebt); // -150
+```
+
+### Valores Negativos
+```javascript
+// Usar valor negativo para somar
+await db.set('score', 100);
+const newScore = await db.sub('score', -50);
+console.log(newScore); // 150 (subtração de negativo = soma)
+```
+
+### Decremento Unitário
+```javascript
+// Decrementar contador
+await db.set('lives', 3);
+
+// Simular perda de vidas
+for (let i = 0; i < 2; i++) {
+    await db.sub('lives', 1);
+}
+
+const remainingLives = await db.get('lives');
+console.log(remainingLives); // 1
+```
+
+## Casos de Uso
+
+### 💰 **Sistema de Compras**
+```javascript
+async function processPurchase(userId, productId, price) {
+    const userKey = `user:${userId}:balance`;
+    const currentBalance = await db.get(userKey) || 0;
+    
+    // Validar saldo
+    if (currentBalance < price) {
+        throw new Error('Saldo insuficiente');
+    }
+    
+    // Debitar valor
+    const newBalance = await db.sub(userKey, price);
+    
+    // Registrar compra
+    await db.push(`user:${userId}:purchases`, {
+        productId,
+        price,
+        timestamp: new Date().toISOString(),
+        balanceAfter: newBalance
+    });
+    
+    // Atualizar estatísticas
+    await db.add('stats:total_sales', 1);
+    await db.add('stats:revenue', price);
+    
+    return {
+        success: true,
+        newBalance,
+        purchaseId: Date.now()
+    };
+}
+```
+
+### 📦 **Controle de Estoque**
+```javascript
+async function sellProduct(productId, quantity) {
+    const stockKey = `product:${productId}:stock`;
+    const currentStock = await db.get(stockKey) || 0;
+    
+    // Validar estoque
+    if (currentStock < quantity) {
+        throw new Error('Estoque insuficiente');
+    }
+    
+    // Reduzir estoque
+    const newStock = await db.sub(stockKey, quantity);
+    
+    // Alertar se estoque baixo
+    if (newStock < 10) {
+        await db.push('alerts:low_stock', {
+            productId,
+            currentStock: newStock,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    // Registrar venda
+    await db.push(`product:${productId}:sales`, {
+        quantity,
+        timestamp: new Date().toISOString(),
+        stockAfter: newStock
+    });
+    
+    return { success: true, newStock };
+}
+```
+
+### 🎮 **Sistema de Vidas/Energia**
+```javascript
+async function useEnergy(playerId, amount, action) {
+    const energyKey = `player:${playerId}:energy`;
+    const currentEnergy = await db.get(energyKey) || 100;
+    
+    // Verificar energia suficiente
+    if (currentEnergy < amount) {
+        throw new Error('Energia insuficiente');
+    }
+    
+    // Consumir energia
+    const newEnergy = await db.sub(energyKey, amount);
+    
+    // Registrar ação
+    await db.push(`player:${playerId}:actions`, {
+        action,
+        energyUsed: amount,
+        energyAfter: newEnergy,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Programar regeneração
+    if (newEnergy < 100) {
+        await scheduleEnergyRegen(playerId);
+    }
+    
+    return { newEnergy, canContinue: newEnergy > 0 };
+}
+
+async function scheduleEnergyRegen(playerId) {
+    const regenKey = `player:${playerId}:regen`;
+    const lastRegen = await db.get(regenKey) || 0;
+    const now = Date.now();
+    
+    // Regenerar 1 energia por minuto
+    if (now - lastRegen > 60000) {
+        await db.add(`player:${playerId}:energy`, 1);
+        await db.set(regenKey, now);
+    }
+}
+```
+
+### 📊 **Controle de Cotas**
+```javascript
+class QuotaManager {
+    constructor(db) {
+        this.db = db;
+    }
+    
+    async useQuota(userId, quotaType, amount) {
+        const quotaKey = `quota:${userId}:${quotaType}`;
+        const currentQuota = await this.db.get(quotaKey) || 0;
+        
+        if (currentQuota < amount) {
+            throw new Error(`Cota ${quotaType} insuficiente`);
+        }
+        
+        const newQuota = await this.db.sub(quotaKey, amount);
+        
+        // Log de uso
+        await this.db.push(`quota:${userId}:usage`, {
+            type: quotaType,
+            used: amount,
+            remaining: newQuota,
+            timestamp: new Date().toISOString()
+        });
+        
+        return { remaining: newQuota, used: amount };
+    }
+    
+    async refillQuota(userId, quotaType, amount) {
+        const quotaKey = `quota:${userId}:${quotaType}`;
+        const newQuota = await this.db.add(quotaKey, amount);
+        
+        await this.db.push(`quota:${userId}:refills`, {
+            type: quotaType,
+            added: amount,
+            total: newQuota,
+            timestamp: new Date().toISOString()
+        });
+        
+        return newQuota;
+    }
+    
+    async getQuotaStatus(userId) {
+        const quotaTypes = ['api_calls', 'storage', 'bandwidth'];
+        const status = {};
+        
+        for (const type of quotaTypes) {
+            const current = await this.db.get(`quota:${userId}:${type}`) || 0;
+            const limit = await this.db.get(`quota:${userId}:${type}:limit`) || 1000;
+            
+            status[type] = {
+                current,
+                limit,
+                percentage: (current / limit) * 100
+            };
+        }
+        
+        return status;
+    }
+}
+```
+
+### 🏆 **Sistema de Penalidades**
+```javascript
+async function applyPenalty(userId, penaltyType, amount) {
+    const penalties = {
+        'timeout': { field: 'reputation', multiplier: 1 },
+        'warning': { field: 'reputation', multiplier: 0.5 },
+        'ban': { field: 'reputation', multiplier: 2 }
+    };
+    
+    const penalty = penalties[penaltyType];
+    if (!penalty) {
+        throw new Error('Tipo de penalidade inválido');
+    }
+    
+    const adjustedAmount = amount * penalty.multiplier;
+    const userKey = `user:${userId}:${penalty.field}`;
+    
+    // Aplicar penalidade
+    const newValue = await db.sub(userKey, adjustedAmount);
+    
+    // Registrar penalidade
+    await db.push(`user:${userId}:penalties`, {
+        type: penaltyType,
+        amount: adjustedAmount,
+        field: penalty.field,
+        newValue,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Verificar se precisa de ações adicionais
+    if (newValue < 0) {
+        await db.set(`user:${userId}:status`, 'suspended');
+        await db.push('admin:alerts', {
+            type: 'user_suspended',
+            userId,
+            reason: `${penalty.field} negativo: ${newValue}`,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    return { newValue, suspended: newValue < 0 };
+}
+```
+
+## Performance
+
+- **Complexidade**: O(1) - Tempo constante
+- **Uso de memória**: Mínimo
+- **Operação atômica**: Segura para concorrência
+- **Ideal para**: Decrementos e controle de recursos
+
+## ⚠️ Considerações
+
+### Validação de Saldo
+```javascript
+async function safeSub(key, value, minValue = 0) {
+    const current = await db.get(key) || 0;
+    
+    if (current - value < minValue) {
+        throw new Error(`Operação resultaria em valor abaixo do mínimo (${minValue})`);
+    }
+    
+    return await db.sub(key, value);
+}
+```
+
+### Operações Condicionais
+```javascript
+async function conditionalSub(key, value, condition) {
+    const current = await db.get(key) || 0;
+    
+    // Verificar condição
+    if (typeof condition === 'function' && !condition(current)) {
+        throw new Error('Condição não atendida para subtração');
+    }
+    
+    return await db.sub(key, value);
+}
+
+// Uso
+await conditionalSub('balance', 100, (current) => current >= 100);
+```
+
+## Notas
+
+- Cria a chave se não existir (valor inicial será o valor negativo)
+- Funciona apenas com valores numéricos
+- Operação atômica em todos os drivers
+- Valor negativo pode ser usado para soma
+- Ideal para controle de recursos e decrementos
+- Pode resultar em valores negativos

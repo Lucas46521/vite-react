@@ -1,0 +1,118 @@
+
+# filter()
+
+Cria um novo array com todos os elementos que passam no teste implementado pela função fornecida.
+
+## Sintaxe
+
+```javascript
+await db.filter(key, callback)
+```
+
+## Parâmetros
+
+- `key` (string): Chave do array no banco
+- `callback` (function): Função de teste para cada elemento
+
+## Callback
+
+```javascript
+function callback(element, index, array) {
+  // Retorna true para manter o elemento
+  // Retorna false para remover o elemento
+}
+```
+
+## Retorno
+
+Retorna um novo array com os elementos filtrados.
+
+## Exemplos
+
+### Filtrando Números
+
+```javascript
+await db.set('numeros', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
+// Números pares
+const pares = await db.filter('numeros', (num) => num % 2 === 0);
+console.log(pares); // [2, 4, 6, 8, 10]
+
+// Números maiores que 5
+const maiores = await db.filter('numeros', (num) => num > 5);
+console.log(maiores); // [6, 7, 8, 9, 10]
+```
+
+### Filtrando Objetos
+
+```javascript
+const usuarios = [
+  { nome: 'João', idade: 25, ativo: true },
+  { nome: 'Maria', idade: 30, ativo: false },
+  { nome: 'Pedro', idade: 22, ativo: true },
+  { nome: 'Ana', idade: 35, ativo: true }
+];
+
+await db.set('usuarios', usuarios);
+
+// Usuários ativos
+const ativos = await db.filter('usuarios', (user) => user.ativo);
+console.log(ativos.length); // 3
+
+// Usuários com mais de 25 anos
+const adultos = await db.filter('usuarios', (user) => user.idade > 25);
+console.log(adultos); // [Maria, Ana]
+```
+
+### Filtrando Strings
+
+```javascript
+await db.set('palavras', ['javascript', 'python', 'java', 'rust', 'go']);
+
+// Palavras com mais de 4 caracteres
+const longas = await db.filter('palavras', (palavra) => palavra.length > 4);
+console.log(longas); // ['javascript', 'python']
+
+// Palavras que começam com 'j'
+const comJ = await db.filter('palavras', (palavra) => palavra.startsWith('j'));
+console.log(comJ); // ['javascript', 'java']
+```
+
+### Usando Índice no Callback
+
+```javascript
+await db.set('cores', ['red', 'green', 'blue', 'yellow', 'purple']);
+
+// Elementos em posições pares
+const posPares = await db.filter('cores', (cor, index) => index % 2 === 0);
+console.log(posPares); // ['red', 'blue', 'purple']
+```
+
+### Filtragem Complexa
+
+```javascript
+const produtos = [
+  { nome: 'Laptop', preco: 2500, categoria: 'eletrônicos' },
+  { nome: 'Mouse', preco: 50, categoria: 'eletrônicos' },
+  { nome: 'Livro', preco: 30, categoria: 'educação' },
+  { nome: 'Teclado', preco: 100, categoria: 'eletrônicos' }
+];
+
+await db.set('produtos', produtos);
+
+// Eletrônicos com preço entre 50 e 200
+const eletronicosBaratos = await db.filter('produtos', (produto) => {
+  return produto.categoria === 'eletrônicos' && 
+         produto.preco >= 50 && 
+         produto.preco <= 200;
+});
+console.log(eletronicosBaratos); // [Mouse, Teclado]
+```
+
+## Notas
+
+- Não modifica o array original
+- Retorna um novo array com os elementos que passaram no teste
+- Se nenhum elemento passar no teste, retorna um array vazio
+- Se a chave não existir, retorna um array vazio
+- Se o valor não for um array, converte para array antes de filtrar

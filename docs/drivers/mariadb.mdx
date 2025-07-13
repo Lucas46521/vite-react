@@ -1,0 +1,184 @@
+
+---
+title: MariaDB Driver
+description: Configuração e uso do driver MariaDB
+---
+
+# MariaDB Driver
+
+Driver para conexão com bancos de dados MariaDB, fork do MySQL com melhorias de performance e recursos extras.
+
+## Instalação
+
+```bash
+npm install mariadb
+```
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helperdb');
+
+const db = new HelperDB({
+  driver: 'mariadb',
+  mariadb: {
+    host: 'localhost',
+    port: 3306,
+    user: 'username',
+    password: 'password',
+    database: 'helperdb',
+    connectionLimit: 10,
+    acquireTimeout: 1000,
+    timeout: 5000
+  }
+});
+
+await db.init();
+```
+
+## Opções de Configuração
+
+### Configuração Básica
+```javascript
+{
+  host: 'localhost',
+  port: 3306,
+  user: 'username',
+  password: 'password',
+  database: 'helperdb'
+}
+```
+
+### Pool de Conexões
+```javascript
+{
+  host: 'localhost',
+  port: 3306,
+  user: 'username',
+  password: 'password',
+  database: 'helperdb',
+  connectionLimit: 15,        // Pool de conexões
+  acquireTimeout: 1000,       // Timeout para obter conexão
+  timeout: 5000,              // Timeout de query
+  minimumIdle: 2,             // Conexões mínimas ociosas
+  idleTimeout: 600000         // Timeout para conexões ociosas
+}
+```
+
+### Configuração Avançada
+```javascript
+{
+  host: 'localhost',
+  port: 3306,
+  user: 'username',
+  password: 'password',
+  database: 'helperdb',
+  charset: 'utf8mb4',
+  timezone: 'local',
+  dateStrings: false,
+  supportBigNumbers: true,
+  bigNumberStrings: false,
+  metaAsArray: true,
+  arrayParenthesis: true
+}
+```
+
+## Características Especiais
+
+### ✅ Vantagens do MariaDB
+- Performance superior ao MySQL
+- Compatibilidade total com MySQL
+- Storage engines adicionais (Aria, TokuDB)
+- JSON nativo melhorado
+- Replicação paralela
+- Thread pooling
+
+### 🚀 Recursos Únicos
+- Virtual columns
+- Window functions
+- Common table expressions (CTEs)
+- Temporal tables
+- Galera clustering
+
+## Exemplos de Uso
+
+### Configuração de Alta Performance
+```javascript
+const db = new HelperDB({
+  driver: 'mariadb',
+  mariadb: {
+    host: 'localhost',
+    port: 3306,
+    user: 'username',
+    password: 'password',
+    database: 'helperdb',
+    connectionLimit: 25,
+    acquireTimeout: 1000,
+    timeout: 5000,
+    charset: 'utf8mb4',
+    
+    // Otimizações MariaDB específicas
+    threadStack: 262144,
+    maxConnections: 100,
+    queryCache: true
+  }
+});
+```
+
+### Cluster Galera
+```javascript
+const db = new HelperDB({
+  driver: 'mariadb',
+  mariadb: {
+    // Múltiplos nós do cluster
+    host: ['node1.cluster.com', 'node2.cluster.com', 'node3.cluster.com'],
+    port: 3306,
+    user: 'username',
+    password: 'password',
+    database: 'helperdb',
+    connectionLimit: 20,
+    
+    // Configurações específicas do Galera
+    wsrepSyncWait: 1,
+    autocommit: true
+  }
+});
+```
+
+## Diferenças do MySQL
+
+### Recursos Extras
+```javascript
+// JSON melhorado
+await db.set('user:1', {
+  profile: { name: 'João', preferences: { theme: 'dark' } }
+});
+
+// Busca JSON nativa
+const users = await db.search('profile->name', 'João');
+
+// Virtual columns (calculadas automaticamente)
+// Configuradas no schema do banco
+```
+
+## Monitoramento
+
+```javascript
+// Verificar performance específica do MariaDB
+const health = await db.ping();
+console.log(`MariaDB conectado - Latência: ${health.latency}ms`);
+
+// Informações do cluster (se aplicável)
+if (health.cluster) {
+  console.log('Nós do cluster:', health.cluster.nodes);
+  console.log('Status:', health.cluster.status);
+}
+```
+
+## Casos de Uso Ideais
+
+- Migração de MySQL com melhor performance
+- Aplicações que precisam de JSON avançado
+- Sistemas de alta disponibilidade com Galera
+- Aplicações analíticas com window functions
+- Sistemas que requerem temporal tables

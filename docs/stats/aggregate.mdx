@@ -1,0 +1,132 @@
+
+---
+title: aggregate()
+description: Executa múltiplas operações estatísticas em uma única chamada
+---
+
+# aggregate()
+
+Executa múltiplas operações estatísticas (count, sum, avg, min, max) em uma única chamada, otimizada para performance.
+
+## Sintaxe
+
+```typescript
+await db.aggregate(key?: string): Promise<AggregateResult>
+```
+
+## Parâmetros
+
+- `key` (opcional): Chave específica para análise de array
+
+## Retorno
+
+Objeto com todas as estatísticas:
+```typescript
+{
+  count: number,
+  sum: number,
+  avg: number,
+  min: number,
+  max: number
+}
+```
+
+## Exemplos
+
+### Agregação Geral
+
+```javascript
+await db.set('score1', 85);
+await db.set('score2', 92);
+await db.set('score3', 78);
+
+const stats = await db.aggregate();
+console.log(stats);
+// { count: 3, sum: 255, avg: 85, min: 78, max: 92 }
+```
+
+### Agregação de Array
+
+```javascript
+await db.set('numbers', [10, 20, 30, 40, 50]);
+
+const stats = await db.aggregate('numbers');
+console.log(stats);
+// { count: 5, sum: 150, avg: 30, min: 10, max: 50 }
+```
+
+## Casos de Uso
+
+- Dashboard com múltiplas métricas
+- Relatórios estatísticos completos
+- Análise de performance em uma chamada
+- Otimização de queries múltiplas
+
+## Comportamento
+
+- **Performance**: Alta eficiência em operações com grandes conjuntos
+- **Versatilidade**: Suporta análise de propriedades específicas ou global
+
+## Métodos Relacionados
+
+- [`count()`](./count.mdx) - Conta registros
+- [`sum()`](./sum.mdx) - Soma valores numéricos
+- [`avg()`](./avg.mdx) - Calcula média dos valores
+- [`min()`](./min.mdx) - Encontra o menor valor
+- [`max()`](./max.mdx) - Encontra o maior valor
+
+# aggregate()
+
+Executa múltiplas operações estatísticas (count, sum, avg, min, max) em uma única chamada, otimizada para performance.
+
+## Sintaxe
+
+```typescript
+await db.aggregate(key?: string): Promise<AggregateResult>
+```
+
+## Parâmetros
+
+- `key` (opcional): Chave específica para análise de array
+
+## Retorno
+
+Objeto com todas as estatísticas:
+```typescript
+{
+  count: number,
+  sum: number,
+  avg: number,
+  min: number,
+  max: number
+}
+```
+
+## Exemplos
+
+### Agregação Geral
+```javascript
+await db.set('score1', 85);
+await db.set('score2', 92);
+await db.set('score3', 78);
+
+const stats = await db.aggregate();
+console.log(stats);
+// { count: 3, sum: 255, avg: 85, min: 78, max: 92 }
+```
+
+### Agregação de Array
+```javascript
+await db.set('numbers', [10, 20, 30, 40, 50]);
+
+const stats = await db.aggregate('numbers');
+console.log(stats);
+// { count: 5, sum: 150, avg: 30, min: 10, max: 50 }
+```
+
+## Casos de Uso
+
+- Dashboard com múltiplas métricas
+- Relatórios estatísticos completos
+- Análise de performance em uma chamada
+- Otimização de queries múltiplas

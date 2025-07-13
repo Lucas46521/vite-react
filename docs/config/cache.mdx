@@ -1,0 +1,159 @@
+
+# Sistema de Cache
+
+O HelperDB inclui um sistema de cache inteligente que melhora significativamente a performance das operações de leitura.
+
+## Configuração
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './data.sqlite',
+    cache: {
+        enabled: true,
+        maxSize: 1000,
+        ttl: 300000, // 5 minutos
+        strategy: 'lru'
+    }
+});
+```
+
+## Opções de Cache
+
+### `enabled`
+- **Tipo**: `boolean`
+- **Padrão**: `true`
+- **Descrição**: Ativa/desativa o sistema de cache
+
+### `maxSize`
+- **Tipo**: `number`
+- **Padrão**: `1000`
+- **Descrição**: Número máximo de entradas no cache
+
+### `ttl`
+- **Tipo**: `number`
+- **Padrão**: `300000` (5 minutos)
+- **Descrição**: Time-to-live em milissegundos
+
+### `strategy`
+- **Tipo**: `'lru' | 'lfu' | 'fifo'`
+- **Padrão**: `'lru'`
+- **Descrição**: Estratégia de remoção de entradas
+
+## Estratégias de Cache
+
+### LRU (Least Recently Used)
+Remove as entradas usadas há mais tempo:
+
+```javascript
+const db = new HelperDB({
+    cache: {
+        strategy: 'lru',
+        maxSize: 500
+    }
+});
+```
+
+### LFU (Least Frequently Used)
+Remove as entradas menos utilizadas:
+
+```javascript
+const db = new HelperDB({
+    cache: {
+        strategy: 'lfu',
+        maxSize: 500
+    }
+});
+```
+
+### FIFO (First In, First Out)
+Remove as entradas mais antigas:
+
+```javascript
+const db = new HelperDB({
+    cache: {
+        strategy: 'fifo',
+        maxSize: 500
+    }
+});
+```
+
+## Métodos de Controle
+
+### Limpar Cache
+```javascript
+// Limpar todo o cache
+await db.cache.clear();
+
+// Limpar entrada específica
+await db.cache.delete('chave');
+
+// Verificar se existe no cache
+const exists = await db.cache.has('chave');
+```
+
+### Estatísticas do Cache
+```javascript
+const stats = await db.cache.getStats();
+console.log(stats);
+// {
+//   hits: 150,
+//   misses: 50,
+//   hitRate: 0.75,
+//   size: 100,
+//   maxSize: 1000
+// }
+```
+
+### Configurar TTL Específico
+```javascript
+// TTL específico para uma entrada
+await db.set('chave', 'valor', { 
+    cacheTtl: 600000 // 10 minutos
+});
+```
+
+## Exemplo Avançado
+
+```javascript
+const db = new HelperDB({
+    driver: 'mysql',
+    cache: {
+        enabled: true,
+        maxSize: 2000,
+        ttl: 600000, // 10 minutos
+        strategy: 'lru',
+        
+        // Configurações avançadas
+        updateOnWrite: true,
+        prefetch: ['user:*', 'config:*'],
+        warmup: async (cache) => {
+            // Pré-carregar dados importantes
+            const configs = await db.search('config:');
+            for (const [key, value] of configs) {
+                await cache.set(key, value);
+            }
+        }
+    }
+});
+
+await db.init();
+
+// O cache será automaticamente usado
+const user = await db.get('user:1'); // Miss - vai ao banco
+const user2 = await db.get('user:1'); // Hit - vem do cache
+
+// Monitorar performance
+setInterval(async () => {
+    const stats = await db.cache.getStats();
+    console.log(`Cache Hit Rate: ${(stats.hitRate * 100).toFixed(2)}%`);
+}, 30000);
+```
+
+## Performance
+
+- **Melhoria típica**: 5-50x mais rápido
+- **Uso de memória**: ~1KB por entrada
+- **Overhead**: < 1ms por operação

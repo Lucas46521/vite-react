@@ -1,0 +1,396 @@
+
+
+# Configurações Gerais
+
+Configurações disponíveis para personalizar o comportamento da Helper.DB.
+
+## Configuração Básica
+
+```javascript
+const { HelperDB } = require('helper.db');
+
+const db = new HelperDB({
+    // Configurações básicas
+    driver: 'sqlite',           // Tipo de driver
+    filePath: 'database.sqlite', // Caminho do arquivo
+    table: 'dados',             // Nome da tabela/coleção
+    
+    // Configurações avançadas
+    enableCache: true,          // Habilitar cache
+    enableBackup: false,        // Backup automático
+    enableValidation: false,    // Validação de schema
+    enableTransactions: false   // Suporte a transações
+});
+```
+
+## Configurações de Driver
+
+### SQLite (Padrão)
+```javascript
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './database.sqlite',
+    table: 'json',
+    options: {
+        pragma: {
+            journal_mode: 'WAL',
+            synchronous: 'NORMAL'
+        }
+    }
+});
+```
+
+### MySQL/MariaDB
+```javascript
+const db = new HelperDB({
+    driver: 'mysql',
+    host: 'localhost',
+    port: 3306,
+    username: 'root',
+    password: 'senha',
+    database: 'minha_db',
+    table: 'dados'
+});
+```
+
+### MongoDB
+```javascript
+const db = new HelperDB({
+    driver: 'mongodb',
+    connectionString: 'mongodb://localhost:27017/database',
+    collection: 'dados'
+});
+```
+
+## Cache Configuration
+
+```javascript
+const db = new HelperDB({
+    enableCache: true,
+    cacheOptions: {
+        size: 1000,         // Máximo de itens no cache
+        ttl: 300000,        // Time-to-live em ms (5 min)
+        checkPeriod: 60000  // Verificação de expiração (1 min)
+    }
+});
+
+// Configurar cache após inicialização
+db.enableCache(2000, 600000); // 2000 itens, 10 min TTL
+```
+
+## Backup Automático
+
+```javascript
+const db = new HelperDB({
+    enableBackup: true,
+    backupOptions: {
+        interval: 3600000,      // Intervalo em ms (1 hora)
+        maxBackups: 24,         // Máximo de backups
+        path: './backups',      // Pasta de destino
+        format: 'json',         // Formato do backup
+        compression: true       // Comprimir backups
+    }
+});
+```
+
+## Validação de Schema
+
+```javascript
+const db = new HelperDB({
+    enableValidation: true,
+    validationOptions: {
+        strict: false,          // Modo estrito
+        allowUnknown: true,     // Permitir campos não definidos
+        stripUnknown: false     // Remover campos desconhecidos
+    }
+});
+
+// Definir schema
+db.defineSchema('usuario', {
+    nome: { type: 'string', required: true, minLength: 2 },
+    idade: { type: 'number', min: 0, max: 150 },
+    email: { type: 'string', pattern: /\S+@\S+\.\S+/ },
+    ativo: { type: 'boolean', default: true }
+});
+```
+
+## Sistema de Transações
+
+```javascript
+const db = new HelperDB({
+    enableTransactions: true,
+    transactionOptions: {
+        timeout: 30000,         // Timeout da transação (30s)
+        maxRetries: 3,          // Tentativas em caso de conflito
+        isolationLevel: 'READ_COMMITTED'
+    }
+});
+
+// Usar transações
+const transaction = await db.beginTransaction();
+try {
+    await db.set('key1', 'value1', { transaction });
+    await db.set('key2', 'value2', { transaction });
+    await db.commitTransaction(transaction);
+} catch (error) {
+    await db.rollbackTransaction(transaction);
+}
+```
+
+## Configurações de Performance
+
+```javascript
+const db = new HelperDB({
+    // Otimizações gerais
+    enableIndexing: true,       // Habilitar índices
+    indexOptions: {
+        autoIndex: true,        // Criar índices automaticamente
+        indexedFields: ['id', 'name', 'email']
+    },
+    
+    // Configurações de conexão
+    connectionOptions: {
+        poolSize: 10,           // Tamanho do pool de conexões
+        timeout: 10000,         // Timeout de conexão
+        retryAttempts: 3        // Tentativas de reconexão
+    },
+    
+    // Configurações de memória
+    memoryOptions: {
+        maxMemoryUsage: '512MB', // Limite de memória
+        garbageCollection: true  // Limpeza automática
+    }
+});
+```
+
+## Configurações de Log
+
+```javascript
+const db = new HelperDB({
+    enableLogging: true,
+    logOptions: {
+        level: 'info',          // debug, info, warn, error
+        format: 'json',         // json, text
+        destination: './logs/db.log',
+        maxSize: '10MB',
+        maxFiles: 5,
+        logQueries: false,      // Log de todas as queries
+        logSlowQueries: true,   // Log apenas queries lentas
+        slowQueryThreshold: 1000 // Threshold em ms
+    }
+});
+```
+
+## Configurações de Segurança
+
+```javascript
+const db = new HelperDB({
+    securityOptions: {
+        encryption: {
+            enabled: true,
+            algorithm: 'aes-256-gcm',
+            key: process.env.DB_ENCRYPTION_KEY
+        },
+        
+        access: {
+            readonly: false,
+            allowedOperations: ['get', 'set', 'delete'],
+            rateLimit: {
+                enabled: true,
+                requests: 1000,
+                window: 60000 // 1 minuto
+            }
+        },
+        
+        validation: {
+            sanitizeInput: true,
+            preventInjection: true,
+            maxKeyLength: 100,
+            maxValueSize: '1MB'
+        }
+    }
+});
+```
+
+## Configurações de Desenvolvimento
+
+```javascript
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const db = new HelperDB({
+    // Configurações específicas para desenvolvimento
+    ...(isDevelopment && {
+        enableLogging: true,
+        logOptions: { level: 'debug' },
+        enableValidation: true,
+        validationOptions: { strict: true }
+    }),
+    
+    // Configurações específicas para produção
+    ...(!isDevelopment && {
+        enableCache: true,
+        cacheOptions: { size: 5000, ttl: 600000 },
+        enableBackup: true,
+        backupOptions: { interval: 3600000 }
+    })
+});
+```
+
+## Configuração por Arquivo
+
+### Arquivo de Configuração JSON
+```json
+{
+  "driver": "sqlite",
+  "filePath": "./database.sqlite",
+  "table": "dados",
+  "cache": {
+    "enabled": true,
+    "size": 1000,
+    "ttl": 300000
+  },
+  "backup": {
+    "enabled": true,
+    "interval": 3600000,
+    "maxBackups": 24,
+    "path": "./backups"
+  },
+  "validation": {
+    "enabled": false,
+    "strict": false
+  }
+}
+```
+
+```javascript
+const config = require('./db-config.json');
+const db = new HelperDB(config);
+```
+
+### Usando Variáveis de Ambiente
+```javascript
+const db = new HelperDB({
+    driver: process.env.DB_DRIVER || 'sqlite',
+    filePath: process.env.DB_PATH || './database.sqlite',
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT),
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    
+    enableCache: process.env.ENABLE_CACHE === 'true',
+    enableBackup: process.env.ENABLE_BACKUP === 'true'
+});
+```
+
+## Validação de Configuração
+
+```javascript
+function validarConfiguracao(config) {
+    const erros = [];
+    
+    // Validar driver
+    const driversValidos = ['sqlite', 'mysql', 'mariadb', 'mongodb', 'json', 'memory'];
+    if (!driversValidos.includes(config.driver)) {
+        erros.push(`Driver inválido: ${config.driver}`);
+    }
+    
+    // Validar configurações de cache
+    if (config.enableCache && config.cacheOptions) {
+        if (config.cacheOptions.size <= 0) {
+            erros.push('Tamanho do cache deve ser positivo');
+        }
+        if (config.cacheOptions.ttl <= 0) {
+            erros.push('TTL do cache deve ser positivo');
+        }
+    }
+    
+    // Validar backup
+    if (config.enableBackup && config.backupOptions) {
+        if (config.backupOptions.interval <= 0) {
+            erros.push('Intervalo de backup deve ser positivo');
+        }
+    }
+    
+    if (erros.length > 0) {
+        throw new Error(`Configuração inválida: ${erros.join(', ')}`);
+    }
+    
+    return true;
+}
+
+// Usar validação
+const config = { /* configurações */ };
+validarConfiguracao(config);
+const db = new HelperDB(config);
+```
+
+## Configurações Recomendadas
+
+### Para Desenvolvimento
+```javascript
+const db = new HelperDB({
+    driver: 'sqlite',
+    filePath: './dev-database.sqlite',
+    enableLogging: true,
+    logOptions: { level: 'debug' },
+    enableValidation: true,
+    validationOptions: { strict: true }
+});
+```
+
+### Para Produção
+```javascript
+const db = new HelperDB({
+    driver: 'mysql', // Ou driver apropriado
+    host: process.env.DB_HOST,
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    
+    enableCache: true,
+    cacheOptions: { size: 5000, ttl: 600000 },
+    
+    enableBackup: true,
+    backupOptions: {
+        interval: 3600000,
+        maxBackups: 24,
+        compression: true
+    },
+    
+    enableLogging: true,
+    logOptions: {
+        level: 'warn',
+        destination: './logs/production.log'
+    }
+});
+```
+
+### Para Alta Performance
+```javascript
+const db = new HelperDB({
+    driver: 'sqlite',
+    options: {
+        pragma: {
+            journal_mode: 'WAL',
+            synchronous: 'NORMAL',
+            cache_size: -128000, // 128MB
+            temp_store: 'MEMORY'
+        }
+    },
+    
+    enableCache: true,
+    cacheOptions: { size: 10000, ttl: 1800000 },
+    
+    enableIndexing: true,
+    indexOptions: { autoIndex: true }
+});
+```
+
+## Veja Também
+
+- [Cache](./cache.mdx) - Sistema de cache
+- [Backup](./backup-auto.mdx) - Backup automático
+- [Validation](./validation.mdx) - Validação de schema
+- [Transactions](./transactions.mdx) - Sistema de transações
+

@@ -1,0 +1,80 @@
+
+# splice()
+
+Modifica um array removendo, substituindo ou adicionando elementos em posições específicas.
+
+## Sintaxe
+
+```javascript
+await db.splice(key, start, deleteCount, ...items)
+```
+
+## Parâmetros
+
+- `key` (string): Chave do array no banco
+- `start` (number): Índice onde começar a modificação
+- `deleteCount` (number): Número de elementos a remover
+- `items` (any[]): Elementos a adicionar
+
+## Retorno
+
+Retorna um array com os elementos removidos.
+
+## Exemplos
+
+### Removendo Elementos
+
+```javascript
+await db.set('frutas', ['apple', 'banana', 'orange', 'grape']);
+
+// Remove 2 elementos a partir do índice 1
+const removidos = await db.splice('frutas', 1, 2);
+console.log(removidos); // ['banana', 'orange']
+
+const atual = await db.get('frutas');
+console.log(atual); // ['apple', 'grape']
+```
+
+### Adicionando Elementos
+
+```javascript
+await db.set('numeros', [1, 2, 5, 6]);
+
+// Adiciona elementos no índice 2 sem remover
+await db.splice('numeros', 2, 0, 3, 4);
+
+const resultado = await db.get('numeros');
+console.log(resultado); // [1, 2, 3, 4, 5, 6]
+```
+
+### Substituindo Elementos
+
+```javascript
+await db.set('cores', ['red', 'green', 'blue']);
+
+// Substitui 1 elemento no índice 1
+const removidos = await db.splice('cores', 1, 1, 'yellow', 'purple');
+console.log(removidos); // ['green']
+
+const atual = await db.get('cores');
+console.log(atual); // ['red', 'yellow', 'purple', 'blue']
+```
+
+### Usando Índices Negativos
+
+```javascript
+await db.set('letras', ['a', 'b', 'c', 'd', 'e']);
+
+// Remove último elemento
+await db.splice('letras', -1, 1);
+
+const resultado = await db.get('letras');
+console.log(resultado); // ['a', 'b', 'c', 'd']
+```
+
+## Notas
+
+- Índices negativos contam a partir do final do array
+- Se `deleteCount` for omitido, remove todos os elementos a partir de `start`
+- Se a chave não existir, será criada como um array vazio
+- Modifica o array original no banco de dados

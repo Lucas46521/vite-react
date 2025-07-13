@@ -1,0 +1,168 @@
+
+# startsWith()
+
+Filtra registros onde as chaves começam com um termo específico.
+
+## Sintaxe
+
+```javascript
+await db.startsWith(prefix)
+```
+
+## Parâmetros
+
+- `prefix` (string): Prefixo que as chaves devem ter
+
+## Retorno
+
+Retorna um objeto com as chaves que começam com o prefixo especificado.
+
+## Exemplos
+
+### Uso Básico
+
+```javascript
+// Definir alguns dados
+await db.set('user:1', { nome: 'João', idade: 25 });
+await db.set('user:2', { nome: 'Maria', idade: 30 });
+await db.set('user:3', { nome: 'Pedro', idade: 22 });
+await db.set('config:theme', 'dark');
+await db.set('config:lang', 'pt-BR');
+
+// Buscar todas as chaves que começam com 'user:'
+const usuarios = await db.startsWith('user:');
+console.log(usuarios);
+// {
+//   'user:1': { nome: 'João', idade: 25 },
+//   'user:2': { nome: 'Maria', idade: 30 },
+//   'user:3': { nome: 'Pedro', idade: 22 }
+// }
+```
+
+### Filtrando Configurações
+
+```javascript
+await db.set('app:name', 'MeuApp');
+await db.set('app:version', '1.0.0');
+await db.set('app:author', 'Developer');
+await db.set('db:host', 'localhost');
+await db.set('db:port', 3306);
+
+// Buscar configurações da aplicação
+const appConfig = await db.startsWith('app:');
+console.log(appConfig);
+// {
+//   'app:name': 'MeuApp',
+//   'app:version': '1.0.0',
+//   'app:author': 'Developer'
+// }
+
+// Buscar configurações do banco
+const dbConfig = await db.startsWith('db:');
+console.log(dbConfig);
+// {
+//   'db:host': 'localhost',
+//   'db:port': 3306
+// }
+```
+
+### Sistema de Cache
+
+```javascript
+await db.set('cache:user:123', { nome: 'João', cached_at: Date.now() });
+await db.set('cache:post:456', { title: 'Post 1', cached_at: Date.now() });
+await db.set('cache:config:theme', { value: 'dark', cached_at: Date.now() });
+await db.set('session:abc123', { user_id: 1, expires_at: Date.now() });
+
+// Buscar todos os itens de cache
+const cacheItems = await db.startsWith('cache:');
+console.log(Object.keys(cacheItems)); // ['cache:user:123', 'cache:post:456', 'cache:config:theme']
+
+// Buscar cache específico de usuários
+const userCache = await db.startsWith('cache:user:');
+console.log(userCache); // { 'cache:user:123': { ... } }
+```
+
+### Organizando por Módulos
+
+```javascript
+// Módulo de autenticação
+await db.set('auth:token:abc123', { user_id: 1, expires: Date.now() });
+await db.set('auth:refresh:def456', { token: 'abc123', expires: Date.now() });
+
+// Módulo de logging
+await db.set('log:error:001', { message: 'Database error', timestamp: Date.now() });
+await db.set('log:info:002', { message: 'User login', timestamp: Date.now() });
+
+// Módulo de métricas
+await db.set('metrics:requests:today', 1500);
+await db.set('metrics:errors:today', 5);
+
+// Buscar dados por módulo
+const authData = await db.startsWith('auth:');
+const logData = await db.startsWith('log:');
+const metricsData = await db.startsWith('metrics:');
+
+console.log('Dados de autenticação:', Object.keys(authData).length);
+console.log('Logs:', Object.keys(logData).length);
+console.log('Métricas:', Object.keys(metricsData).length);
+```
+
+### Namespaces Hierárquicos
+
+```javascript
+await db.set('api:v1:users:list', 'endpoint_config');
+await db.set('api:v1:users:create', 'endpoint_config');
+await db.set('api:v2:users:list', 'endpoint_config');
+await db.set('api:v2:posts:list', 'endpoint_config');
+
+// Buscar todas as APIs
+const allApis = await db.startsWith('api:');
+
+// Buscar apenas APIs v1
+const v1Apis = await db.startsWith('api:v1:');
+
+// Buscar apenas endpoints de usuários v1
+const v1UserApis = await db.startsWith('api:v1:users:');
+
+console.log('Total APIs:', Object.keys(allApis).length); // 4
+console.log('APIs v1:', Object.keys(v1Apis).length); // 2
+console.log('User APIs v1:', Object.keys(v1UserApis).length); // 2
+```
+
+### Limpeza de Dados
+
+```javascript
+// Função para limpar cache expirado
+async function limparCacheExpirado() {
+  const cacheItems = await db.startsWith('cache:');
+  
+  for (const [key, value] of Object.entries(cacheItems)) {
+    if (value.expires_at && value.expires_at < Date.now()) {
+      await db.delete(key);
+      console.log(`Cache expirado removido: ${key}`);
+    }
+  }
+}
+
+// Função para obter estatísticas por prefixo
+async function obterEstatisticas(prefix) {
+  const items = await db.startsWith(prefix);
+  return {
+    total: Object.keys(items).length,
+    chaves: Object.keys(items),
+    tamanho: JSON.stringify(items).length
+  };
+}
+
+const statsUsers = await obterEstatisticas('user:');
+const statsConfig = await obterEstatisticas('config:');
+```
+
+## Notas
+
+- A busca é case-sensitive (diferencia maiúsculas de minúsculas)
+- Retorna um objeto vazio se nenhuma chave for encontrada
+- É eficiente para buscar grupos de dados organizados hierarquicamente
+- Útil para implementar namespaces e organização de dados
+- Pode ser combinado com outros métodos para operações mais complexas

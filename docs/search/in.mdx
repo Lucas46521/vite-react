@@ -1,0 +1,193 @@
+
+# in()
+
+Filtra registros onde o valor de uma propriedade específica está contido em uma lista de valores.
+
+## Sintaxe
+
+```javascript
+await db.in(field, values)
+```
+
+## Parâmetros
+
+- `field` (string): Nome da propriedade a ser verificada
+- `values` (array): Array de valores permitidos
+
+## Retorno
+
+Retorna um array com os registros que atendem ao critério.
+
+## Exemplos
+
+### Filtrando por Status
+
+```javascript
+const usuarios = [
+  { id: 1, nome: 'João', status: 'ativo' },
+  { id: 2, nome: 'Maria', status: 'inativo' },
+  { id: 3, nome: 'Pedro', status: 'pendente' },
+  { id: 4, nome: 'Ana', status: 'ativo' },
+  { id: 5, nome: 'Carlos', status: 'banido' }
+];
+
+await db.set('usuarios', usuarios);
+
+// Buscar usuários ativos ou pendentes
+const usuariosAtivos = await db.in('status', ['ativo', 'pendente']);
+console.log(usuariosAtivos);
+// [
+//   { id: 1, nome: 'João', status: 'ativo' },
+//   { id: 3, nome: 'Pedro', status: 'pendente' },
+//   { id: 4, nome: 'Ana', status: 'ativo' }
+// ]
+```
+
+### Filtrando por Categoria
+
+```javascript
+const produtos = [
+  { id: 1, nome: 'Laptop', categoria: 'eletrônicos' },
+  { id: 2, nome: 'Livro', categoria: 'educação' },
+  { id: 3, nome: 'Mouse', categoria: 'eletrônicos' },
+  { id: 4, nome: 'Cadeira', categoria: 'móveis' },
+  { id: 5, nome: 'Curso', categoria: 'educação' }
+];
+
+await db.set('produtos', produtos);
+
+// Buscar produtos de eletrônicos ou educação
+const produtosFiltrados = await db.in('categoria', ['eletrônicos', 'educação']);
+console.log(produtosFiltrados.length); // 4
+```
+
+### Filtrando por Faixa Etária
+
+```javascript
+const pessoas = [
+  { nome: 'João', idade: 25, cidade: 'São Paulo' },
+  { nome: 'Maria', idade: 30, cidade: 'Rio de Janeiro' },
+  { nome: 'Pedro', idade: 22, cidade: 'Belo Horizonte' },
+  { nome: 'Ana', idade: 35, cidade: 'São Paulo' },
+  { nome: 'Carlos', idade: 28, cidade: 'Salvador' }
+];
+
+await db.set('pessoas', pessoas);
+
+// Buscar pessoas com idades específicas
+const idadesDesejadas = [25, 30, 35];
+const pessoasFiltradas = await db.in('idade', idadesDesejadas);
+console.log(pessoasFiltradas.map(p => `${p.nome} (${p.idade})`));
+// ['João (25)', 'Maria (30)', 'Ana (35)']
+```
+
+### Filtrando por Múltiplas Cidades
+
+```javascript
+await db.set('funcionarios', [
+  { id: 1, nome: 'João', cidade: 'São Paulo', departamento: 'TI' },
+  { id: 2, nome: 'Maria', cidade: 'Rio de Janeiro', departamento: 'RH' },
+  { id: 3, nome: 'Pedro', cidade: 'Belo Horizonte', departamento: 'TI' },
+  { id: 4, nome: 'Ana', cidade: 'São Paulo', departamento: 'Vendas' },
+  { id: 5, nome: 'Carlos', cidade: 'Salvador', departamento: 'TI' }
+]);
+
+// Buscar funcionários em cidades específicas
+const cidadesTarget = ['São Paulo', 'Rio de Janeiro'];
+const funcionariosCidades = await db.in('cidade', cidadesTarget);
+console.log(funcionariosCidades.length); // 3
+```
+
+### Filtrando por IDs
+
+```javascript
+await db.set('pedidos', [
+  { id: 101, cliente: 'João', total: 150.00 },
+  { id: 102, cliente: 'Maria', total: 200.00 },
+  { id: 103, cliente: 'Pedro', total: 100.00 },
+  { id: 104, cliente: 'Ana', total: 300.00 },
+  { id: 105, cliente: 'Carlos', total: 250.00 }
+]);
+
+// Buscar pedidos específicos por ID
+const idsDesejados = [101, 103, 105];
+const pedidosSelecionados = await db.in('id', idsDesejados);
+console.log(pedidosSelecionados.map(p => `Pedido ${p.id}: R$ ${p.total}`));
+```
+
+### Filtrando com Strings
+
+```javascript
+await db.set('artigos', [
+  { titulo: 'JavaScript Básico', autor: 'João', tags: ['javascript', 'iniciante'] },
+  { titulo: 'React Avançado', autor: 'Maria', tags: ['react', 'avançado'] },
+  { titulo: 'Node.js API', autor: 'Pedro', tags: ['nodejs', 'api'] },
+  { titulo: 'Python para Dados', autor: 'Ana', tags: ['python', 'dados'] },
+  { titulo: 'JavaScript ES6', autor: 'Carlos', tags: ['javascript', 'es6'] }
+]);
+
+// Buscar artigos de autores específicos
+const autoresDesejados = ['João', 'Ana', 'Carlos'];
+const artigosFiltrados = await db.in('autor', autoresDesejados);
+console.log(artigosFiltrados.map(a => a.titulo));
+```
+
+### Combinando com Outros Filtros
+
+```javascript
+// Primeiro filtrar por categoria
+const eletronicos = await db.in('categoria', ['eletrônicos']);
+
+// Depois filtrar por preço (simulado)
+const eletronicosCaros = eletronicos.filter(produto => produto.preco > 100);
+
+// Ou usar múltiplos campos
+await db.set('vendas', [
+  { id: 1, produto: 'Laptop', vendedor: 'João', mes: 'janeiro' },
+  { id: 2, produto: 'Mouse', vendedor: 'Maria', mes: 'janeiro' },
+  { id: 3, produto: 'Teclado', vendedor: 'João', mes: 'fevereiro' },
+  { id: 4, produto: 'Monitor', vendedor: 'Pedro', mes: 'janeiro' }
+]);
+
+// Filtrar vendas de vendedores específicos
+const vendedoresTarget = ['João', 'Maria'];
+const vendasFiltradas = await db.in('vendedor', vendedoresTarget);
+
+// Depois filtrar por mês
+const vendasJaneiro = vendasFiltradas.filter(v => v.mes === 'janeiro');
+```
+
+### Função Utilitária
+
+```javascript
+// Função para filtrar múltiplos campos
+async function filtrarMultiplosCampos(chave, filtros) {
+  let dados = await db.get(chave);
+  
+  for (const [campo, valores] of Object.entries(filtros)) {
+    const filtrados = await db.in(campo, valores);
+    dados = dados.filter(item => 
+      filtrados.some(f => f.id === item.id)
+    );
+  }
+  
+  return dados;
+}
+
+// Exemplo de uso
+const filtros = {
+  categoria: ['eletrônicos', 'educação'],
+  status: ['ativo', 'disponível']
+};
+
+const resultados = await filtrarMultiplosCampos('produtos', filtros);
+```
+
+## Notas
+
+- Usa comparação estrita (===) para verificar se o valor está na lista
+- Retorna um array vazio se nenhum registro atender ao critério
+- É eficiente para filtrar por listas predefinidas de valores
+- Pode ser usado com qualquer tipo de dados (strings, números, booleanos)
+- Se a chave não existir, retorna um array vazio
+- Se o valor não for um array, converte para array antes de filtrar

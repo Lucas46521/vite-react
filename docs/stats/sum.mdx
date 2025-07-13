@@ -1,0 +1,282 @@
+
+# sum()
+
+Calcula a soma de valores numéricos em uma propriedade específica ou em todos os valores.
+
+## Sintaxe
+
+```javascript
+await db.sum(field)
+await db.sum() // Soma todos os valores numéricos
+```
+
+## Parâmetros
+
+- `field` (string, opcional): Nome da propriedade a ser somada. Se omitido, soma todos os valores numéricos
+
+## Retorno
+
+Retorna a soma dos valores numéricos encontrados.
+
+## Exemplos
+
+### Soma de Propriedade Específica
+
+```javascript
+const vendas = [
+  { id: 1, produto: 'Laptop', valor: 2500.00 },
+  { id: 2, produto: 'Mouse', valor: 50.00 },
+  { id: 3, produto: 'Teclado', valor: 150.00 },
+  { id: 4, produto: 'Monitor', valor: 800.00 }
+];
+
+await db.set('vendas', vendas);
+
+// Soma total dos valores das vendas
+const totalVendas = await db.sum('valor');
+console.log(totalVendas); // 3500.00
+```
+
+### Soma de Idades
+
+```javascript
+const funcionarios = [
+  { nome: 'João', idade: 25, salario: 5000 },
+  { nome: 'Maria', idade: 32, salario: 7000 },
+  { nome: 'Pedro', idade: 28, salario: 6000 },
+  { nome: 'Ana', idade: 35, salario: 8000 }
+];
+
+await db.set('funcionarios', funcionarios);
+
+// Soma das idades
+const somaIdades = await db.sum('idade');
+console.log(somaIdades); // 120
+
+// Soma dos salários
+const totalSalarios = await db.sum('salario');
+console.log(totalSalarios); // 26000
+```
+
+### Soma de Quantidades em Estoque
+
+```javascript
+const estoque = [
+  { produto: 'Laptop', quantidade: 5, valor_unitario: 2500 },
+  { produto: 'Mouse', quantidade: 50, valor_unitario: 50 },
+  { produto: 'Teclado', quantidade: 20, valor_unitario: 150 },
+  { produto: 'Monitor', quantidade: 8, valor_unitario: 800 }
+];
+
+await db.set('estoque', estoque);
+
+// Total de itens em estoque
+const totalItens = await db.sum('quantidade');
+console.log(totalItens); // 83
+
+// Valor total do estoque (precisa calcular separadamente)
+const estoqueValorTotal = estoque.reduce((total, item) => {
+  return total + (item.quantidade * item.valor_unitario);
+}, 0);
+console.log(estoqueValorTotal);
+```
+
+### Soma de Pontuações
+
+```javascript
+const jogadores = [
+  { nome: 'João', score: 1500, partidas: 10 },
+  { nome: 'Maria', score: 2300, partidas: 15 },
+  { nome: 'Pedro', score: 800, partidas: 5 },
+  { nome: 'Ana', score: 3200, partidas: 20 }
+];
+
+await db.set('jogadores', jogadores);
+
+// Pontuação total de todos os jogadores
+const scoreTotalGeral = await db.sum('score');
+console.log(scoreTotalGeral); // 7800
+
+// Total de partidas jogadas
+const totalPartidas = await db.sum('partidas');
+console.log(totalPartidas); // 50
+```
+
+### Soma de Valores Simples
+
+```javascript
+// Armazenar valores numéricos simples
+await db.set('receita_janeiro', 15000);
+await db.set('receita_fevereiro', 18000);
+await db.set('receita_marco', 22000);
+await db.set('despesa_janeiro', 8000);
+await db.set('despesa_fevereiro', 9500);
+
+// Soma de todas as receitas (filtrando por chave)
+const todasReceitas = await db.startsWith('receita_');
+const totalReceitas = Object.values(todasReceitas)
+  .reduce((sum, valor) => sum + valor, 0);
+console.log(totalReceitas); // 55000
+
+// Usando sum() em todos os valores numéricos
+const somaGeral = await db.sum();
+console.log(somaGeral); // Soma todos os valores numéricos no banco
+```
+
+### Soma com Filtros
+
+```javascript
+const transacoes = [
+  { tipo: 'entrada', valor: 1000, categoria: 'vendas' },
+  { tipo: 'saida', valor: 200, categoria: 'marketing' },
+  { tipo: 'entrada', valor: 1500, categoria: 'vendas' },
+  { tipo: 'saida', valor: 300, categoria: 'operacional' },
+  { tipo: 'entrada', valor: 800, categoria: 'servicos' }
+];
+
+await db.set('transacoes', transacoes);
+
+// Soma apenas das entradas (precisa filtrar primeiro)
+const entradas = transacoes.filter(t => t.tipo === 'entrada');
+const somaEntradas = entradas.reduce((sum, t) => sum + t.valor, 0);
+console.log(somaEntradas); // 3300
+
+// Soma apenas das saídas
+const saidas = transacoes.filter(t => t.tipo === 'saida');
+const somaSaidas = saidas.reduce((sum, t) => sum + t.valor, 0);
+console.log(somaSaidas); // 500
+```
+
+### Soma por Período
+
+```javascript
+const vendaeMensais = [
+  { mes: 'janeiro', vendas: 15000, custos: 8000 },
+  { mes: 'fevereiro', vendas: 18000, custos: 9500 },
+  { mes: 'marco', vendas: 22000, custos: 11000 },
+  { mes: 'abril', vendas: 19000, custos: 9800 }
+];
+
+await db.set('vendas_mensais', vendaeMensais);
+
+// Total de vendas no período
+const totalVendasPeriodo = await db.sum('vendas');
+console.log(totalVendasPeriodo); // 74000
+
+// Total de custos no período
+const totalCustosPeriodo = await db.sum('custos');
+console.log(totalCustosPeriodo); // 38300
+
+// Lucro total (vendas - custos)
+const lucroTotal = totalVendasPeriodo - totalCustosPeriodo;
+console.log(lucroTotal); // 35700
+```
+
+### Função Utilitária para Somas Condicionais
+
+```javascript
+// Função para soma condicional
+async function somaCondicional(chave, campo, condicao) {
+  const dados = await db.get(chave);
+  
+  if (!Array.isArray(dados)) return 0;
+  
+  return dados
+    .filter(condicao)
+    .reduce((sum, item) => sum + (item[campo] || 0), 0);
+}
+
+// Exemplos de uso
+const vendas2024 = await somaCondicional('vendas', 'valor', 
+  item => item.ano === 2024
+);
+
+const vendasAltasValor = await somaCondicional('vendas', 'valor',
+  item => item.valor > 1000
+);
+
+// Função para múltiplas somas
+async function multipaSumas(chave, campos) {
+  const resultados = {};
+  
+  for (const campo of campos) {
+    resultados[campo] = await db.sum(campo);
+  }
+  
+  return resultados;
+}
+
+// Exemplo: obter somas de múltiplos campos
+const somas = await multipaSumas('funcionarios', ['idade', 'salario']);
+console.log(somas); // { idade: 120, salario: 26000 }
+```
+
+### Soma com Validação
+
+```javascript
+// Função para soma com validação de dados
+async function somaSegura(chave, campo) {
+  try {
+    const dados = await db.get(chave);
+    
+    if (!dados) {
+      console.warn(`Chave '${chave}' não encontrada`);
+      return 0;
+    }
+    
+    if (!Array.isArray(dados)) {
+      console.warn(`Dados em '${chave}' não são um array`);
+      return 0;
+    }
+    
+    const soma = dados.reduce((total, item) => {
+      const valor = item[campo];
+      if (typeof valor === 'number' && !isNaN(valor)) {
+        return total + valor;
+      }
+      return total;
+    }, 0);
+    
+    return soma;
+    
+  } catch (error) {
+    console.error(`Erro ao calcular soma: ${error.message}`);
+    return 0;
+  }
+}
+
+// Uso da função segura
+const somaSeguraResultado = await somaSegura('vendas', 'valor');
+```
+
+### Relatório Financeiro
+
+```javascript
+// Função para gerar relatório financeiro
+async function relatorioFinanceiro() {
+  const receitas = await db.sum('receitas');
+  const despesas = await db.sum('despesas');
+  const investimentos = await db.sum('investimentos');
+  
+  return {
+    receitas,
+    despesas,
+    investimentos,
+    resultado: receitas - despesas,
+    saldoLiquido: receitas - despesas - investimentos,
+    margemLucro: receitas > 0 ? ((receitas - despesas) / receitas * 100).toFixed(2) + '%' : '0%'
+  };
+}
+
+const relatorio = await relatorioFinanceiro();
+console.log(relatorio);
+```
+
+## Notas
+
+- Ignora valores não numéricos automaticamente
+- Se o campo não existir nos registros, considera como 0
+- Para arrays, soma os valores da propriedade especificada em cada elemento
+- Retorna 0 se nenhum valor numérico for encontrado
+- Se a chave não existir, retorna 0
+- Para somas condicionais, combine com outros métodos de filtro primeiro

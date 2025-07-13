@@ -1,0 +1,97 @@
+
+# includes()
+
+Verifica se um array contém um elemento específico.
+
+## Sintaxe
+
+```javascript
+await db.includes(key, searchElement, fromIndex)
+```
+
+## Parâmetros
+
+- `key` (string): Chave do array no banco
+- `searchElement` (any): Elemento a ser procurado
+- `fromIndex` (number, opcional): Índice para começar a busca
+
+## Retorno
+
+Retorna `true` se o elemento for encontrado, `false` caso contrário.
+
+## Exemplos
+
+### Uso Básico
+
+```javascript
+await db.set('frutas', ['apple', 'banana', 'orange']);
+
+const temBanana = await db.includes('frutas', 'banana');
+console.log(temBanana); // true
+
+const temUva = await db.includes('frutas', 'grape');
+console.log(temUva); // false
+```
+
+### Com fromIndex
+
+```javascript
+await db.set('numeros', [1, 2, 3, 4, 5]);
+
+// Busca a partir do índice 2
+const tem3 = await db.includes('numeros', 3, 2);
+console.log(tem3); // true
+
+// Busca a partir do índice 4
+const tem2 = await db.includes('numeros', 2, 4);
+console.log(tem2); // false (2 está no índice 1)
+```
+
+### Com NaN
+
+```javascript
+await db.set('valores', [1, NaN, 3]);
+
+// includes() consegue encontrar NaN
+const temNaN = await db.includes('valores', NaN);
+console.log(temNaN); // true
+```
+
+### Com Objetos
+
+```javascript
+const usuarios = [
+  { id: 1, nome: 'João' },
+  { id: 2, nome: 'Maria' }
+];
+
+await db.set('usuarios', usuarios);
+
+// Comparação por referência
+const usuario = usuarios[0];
+const temUsuario = await db.includes('usuarios', usuario);
+console.log(temUsuario); // true
+
+// Objeto com mesmo conteúdo mas referência diferente
+const novoUsuario = { id: 1, nome: 'João' };
+const temNovo = await db.includes('usuarios', novoUsuario);
+console.log(temNovo); // false
+```
+
+### Busca com Índices Negativos
+
+```javascript
+await db.set('letras', ['a', 'b', 'c', 'd', 'e']);
+
+// Busca a partir dos últimos 3 elementos
+const temC = await db.includes('letras', 'c', -3);
+console.log(temC); // true
+```
+
+## Notas
+
+- Usa o algoritmo SameValueZero (similar ao ===, mas NaN é igual a NaN)
+- Para objetos, compara por referência
+- Índices negativos contam a partir do final do array
+- Se a chave não existir, retorna `false`
+- Se o valor não for um array, converte para array antes da verificação

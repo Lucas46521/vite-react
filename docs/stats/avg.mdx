@@ -1,0 +1,287 @@
+
+# avg()
+
+Calcula a média aritmética de valores numéricos em uma propriedade específica.
+
+## Sintaxe
+
+```javascript
+await db.avg(field)
+```
+
+## Parâmetros
+
+- `field` (string): Nome da propriedade para calcular a média
+
+## Retorno
+
+Retorna a média dos valores numéricos encontrados, ou 0 se nenhum valor for encontrado.
+
+## Exemplos
+
+### Média de Idades
+
+```javascript
+const funcionarios = [
+  { nome: 'João', idade: 25, salario: 5000 },
+  { nome: 'Maria', idade: 32, salario: 7000 },
+  { nome: 'Pedro', idade: 28, salario: 6000 },
+  { nome: 'Ana', idade: 35, salario: 8000 }
+];
+
+await db.set('funcionarios', funcionarios);
+
+// Média das idades
+const mediaIdades = await db.avg('idade');
+console.log(mediaIdades); // 30
+
+// Média dos salários
+const mediaSalarios = await db.avg('salario');
+console.log(mediaSalarios); // 6500
+```
+
+### Média de Notas Escolares
+
+```javascript
+const estudantes = [
+  { nome: 'João', nota_matematica: 8.5, nota_portugues: 7.2 },
+  { nome: 'Maria', nota_matematica: 9.0, nota_portugues: 8.8 },
+  { nome: 'Pedro', nota_matematica: 6.5, nota_portugues: 7.0 },
+  { nome: 'Ana', nota_matematica: 9.5, nota_portugues: 9.2 }
+];
+
+await db.set('estudantes', estudantes);
+
+// Média geral em matemática
+const mediaMatematica = await db.avg('nota_matematica');
+console.log(mediaMatematica); // 8.375
+
+// Média geral em português
+const mediaPortugues = await db.avg('nota_portugues');
+console.log(mediaPortugues); // 8.05
+```
+
+### Média de Vendas
+
+```javascript
+const vendedores = [
+  { nome: 'Carlos', vendas_mes: 15000, meta: 12000 },
+  { nome: 'Ana', vendas_mes: 18000, meta: 15000 },
+  { nome: 'Bruno', vendas_mes: 22000, meta: 18000 },
+  { nome: 'Diana', vendas_mes: 12000, meta: 10000 }
+];
+
+await db.set('vendedores', vendedores);
+
+// Média de vendas mensais
+const mediaVendas = await db.avg('vendas_mes');
+console.log(mediaVendas); // 16750
+
+// Média das metas
+const mediaMetas = await db.avg('meta');
+console.log(mediaMetas); // 13750
+
+// Calcular % de cumprimento médio da meta
+const percentualMedio = (mediaVendas / mediaMetas * 100).toFixed(2);
+console.log(`${percentualMedio}% de cumprimento médio das metas`);
+```
+
+### Média de Avaliações de Produtos
+
+```javascript
+const produtos = [
+  { nome: 'Laptop', avaliacao: 4.5, numero_avaliacoes: 120 },
+  { nome: 'Mouse', avaliacao: 4.2, numero_avaliacoes: 85 },
+  { nome: 'Teclado', avaliacao: 4.8, numero_avaliacoes: 95 },
+  { nome: 'Monitor', avaliacao: 4.1, numero_avaliacoes: 67 }
+];
+
+await db.set('produtos', produtos);
+
+// Média das avaliações
+const mediaAvaliacoes = await db.avg('avaliacao');
+console.log(mediaAvaliacoes); // 4.4
+
+// Média do número de avaliações
+const mediaNumeroAvaliacoes = await db.avg('numero_avaliacoes');
+console.log(mediaNumeroAvaliacoes); // 91.75
+```
+
+### Média de Performance do Sistema
+
+```javascript
+const metricas = [
+  { timestamp: '2024-01-01', cpu_usage: 45.2, memory_usage: 62.1, response_time: 120 },
+  { timestamp: '2024-01-02', cpu_usage: 52.8, memory_usage: 58.4, response_time: 135 },
+  { timestamp: '2024-01-03', cpu_usage: 48.1, memory_usage: 65.3, response_time: 110 },
+  { timestamp: '2024-01-04', cpu_usage: 41.5, memory_usage: 59.7, response_time: 125 }
+];
+
+await db.set('metricas_sistema', metricas);
+
+// Médias de performance
+const mediaCPU = await db.avg('cpu_usage');
+const mediaMemoria = await db.avg('memory_usage');
+const mediaResposta = await db.avg('response_time');
+
+console.log(`CPU média: ${mediaCPU.toFixed(2)}%`);
+console.log(`Memória média: ${mediaMemoria.toFixed(2)}%`);
+console.log(`Tempo resposta médio: ${mediaResposta.toFixed(2)}ms`);
+```
+
+### Média de Preços por Categoria
+
+```javascript
+const produtos_loja = [
+  { nome: 'Laptop', categoria: 'eletrônicos', preco: 2500 },
+  { nome: 'Mouse', categoria: 'eletrônicos', preco: 50 },
+  { nome: 'Livro', categoria: 'educação', preco: 30 },
+  { nome: 'Monitor', categoria: 'eletrônicos', preco: 800 },
+  { nome: 'Curso', categoria: 'educação', preco: 200 }
+];
+
+await db.set('produtos_loja', produtos_loja);
+
+// Função para calcular média por categoria
+async function mediaPorCategoria(categoria) {
+  const dados = await db.get('produtos_loja');
+  const produtosCategoria = dados.filter(p => p.categoria === categoria);
+  
+  if (produtosCategoria.length === 0) return 0;
+  
+  const soma = produtosCategoria.reduce((total, p) => total + p.preco, 0);
+  return soma / produtosCategoria.length;
+}
+
+const mediaEletronicos = await mediaPorCategoria('eletrônicos');
+const mediaEducacao = await mediaPorCategoria('educação');
+
+console.log(`Preço médio eletrônicos: R$ ${mediaEletronicos.toFixed(2)}`);
+console.log(`Preço médio educação: R$ ${mediaEducacao.toFixed(2)}`);
+```
+
+### Média Móvel (Últimos N Registros)
+
+```javascript
+const vendas_diarias = [
+  { data: '2024-01-01', valor: 1500 },
+  { data: '2024-01-02', valor: 1800 },
+  { data: '2024-01-03', valor: 1200 },
+  { data: '2024-01-04', valor: 2000 },
+  { data: '2024-01-05', valor: 1600 },
+  { data: '2024-01-06', valor: 2200 },
+  { data: '2024-01-07', valor: 1900 }
+];
+
+await db.set('vendas_diarias', vendas_diarias);
+
+// Função para média móvel dos últimos N dias
+async function mediaMovel(chave, campo, dias) {
+  const dados = await db.get(chave);
+  const ultimosRegistros = dados.slice(-dias);
+  
+  if (ultimosRegistros.length === 0) return 0;
+  
+  const soma = ultimosRegistros.reduce((total, item) => total + item[campo], 0);
+  return soma / ultimosRegistros.length;
+}
+
+const mediaUltimos3Dias = await mediaMovel('vendas_diarias', 'valor', 3);
+const mediaUltimos7Dias = await mediaMovel('vendas_diarias', 'valor', 7);
+
+console.log(`Média últimos 3 dias: R$ ${mediaUltimos3Dias.toFixed(2)}`);
+console.log(`Média últimos 7 dias: R$ ${mediaUltimos7Dias.toFixed(2)}`);
+```
+
+### Função Utilitária para Múltiplas Médias
+
+```javascript
+// Função para calcular múltiplas médias
+async function multiplasMedias(chave, campos) {
+  const resultados = {};
+  
+  for (const campo of campos) {
+    resultados[campo] = await db.avg(campo);
+  }
+  
+  return resultados;
+}
+
+// Exemplo de uso
+const medias = await multiplasMedias('funcionarios', ['idade', 'salario']);
+console.log(medias); // { idade: 30, salario: 6500 }
+
+// Função para média com filtro
+async function mediaComFiltro(chave, campo, filtro) {
+  const dados = await db.get(chave);
+  const dadosFiltrados = dados.filter(filtro);
+  
+  if (dadosFiltrados.length === 0) return 0;
+  
+  const soma = dadosFiltrados.reduce((total, item) => total + (item[campo] || 0), 0);
+  return soma / dadosFiltrados.length;
+}
+
+// Média salarial de funcionários seniores (>30 anos)
+const mediaSalarioSenior = await mediaComFiltro('funcionarios', 'salario', 
+  funcionario => funcionario.idade > 30
+);
+
+console.log(`Salário médio seniores: R$ ${mediaSalarioSenior.toFixed(2)}`);
+```
+
+### Relatório de Médias
+
+```javascript
+// Função para relatório completo de médias
+async function relatorioMedias(chave, campo) {
+  const dados = await db.get(chave);
+  const valores = dados.map(item => item[campo]).filter(v => typeof v === 'number');
+  
+  if (valores.length === 0) {
+    return {
+      campo,
+      media: 0,
+      contagem: 0,
+      observacao: 'Nenhum valor numérico encontrado'
+    };
+  }
+  
+  const soma = valores.reduce((a, b) => a + b, 0);
+  const media = soma / valores.length;
+  const min = Math.min(...valores);
+  const max = Math.max(...valores);
+  
+  // Ordenar para calcular mediana
+  const valoresOrdenados = valores.sort((a, b) => a - b);
+  const meio = Math.floor(valoresOrdenados.length / 2);
+  const mediana = valoresOrdenados.length % 2 === 0 
+    ? (valoresOrdenados[meio - 1] + valoresOrdenados[meio]) / 2
+    : valoresOrdenados[meio];
+  
+  return {
+    campo,
+    media: Math.round(media * 100) / 100,
+    mediana,
+    minimo: min,
+    maximo: max,
+    contagem: valores.length,
+    amplitude: max - min
+  };
+}
+
+const relatorioIdades = await relatorioMedias('funcionarios', 'idade');
+const relatorioSalarios = await relatorioMedias('funcionarios', 'salario');
+
+console.log('Relatório Idades:', relatorioIdades);
+console.log('Relatório Salários:', relatorioSalarios);
+```
+
+## Notas
+
+- Ignora valores não numéricos automaticamente
+- Retorna 0 se nenhum valor numérico for encontrado
+- Se o campo não existir nos registros, esses registros são ignorados
+- Para arrays, calcula a média da propriedade especificada em cada elemento
+- Se a chave não existir, retorna 0
+- O resultado é um número decimal - use toFixed() para controlar casas decimais

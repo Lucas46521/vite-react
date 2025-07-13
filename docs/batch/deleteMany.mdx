@@ -1,0 +1,83 @@
+
+---
+title: deleteMany()
+description: Remove múltiplos valores em uma única operação
+---
+
+# deleteMany()
+
+Remove múltiplos valores através de suas chaves em uma única operação otimizada.
+
+## Sintaxe
+
+```typescript
+await db.deleteMany(keys: string[]): Promise<number>
+```
+
+## Parâmetros
+
+- `keys`: Array de chaves para remover
+
+## Retorno
+
+Número de chaves removidas com sucesso.
+
+## Exemplos
+
+### Remoção Básica
+```javascript
+await db.setMany({
+  'temp:1': 'data1',
+  'temp:2': 'data2',
+  'temp:3': 'data3',
+  'temp:4': 'data4'
+});
+
+const removed = await db.deleteMany(['temp:1', 'temp:2', 'temp:3']);
+console.log(removed); // 3
+```
+
+### Limpeza de Cache
+```javascript
+// Limpar todos os dados temporários
+const tempKeys = await db.search('temp:');
+const removed = await db.deleteMany(tempKeys.map(item => item.key));
+console.log(`${removed} itens temporários removidos`);
+```
+
+### Remoção de Usuários
+```javascript
+const userIds = ['user:1', 'user:2', 'user:3'];
+const removed = await db.deleteMany(userIds);
+
+if (removed === userIds.length) {
+  console.log('Todos os usuários removidos');
+} else {
+  console.log(`${removed}/${userIds.length} usuários removidos`);
+}
+```
+
+### Com Chaves Inexistentes
+```javascript
+const removed = await db.deleteMany([
+  'existing1',
+  'nonexistent',
+  'existing2'
+]);
+console.log(removed); // 2 (apenas chaves existentes são contadas)
+```
+
+## Performance
+
+Muito mais eficiente que múltiplas chamadas `delete()`.
+
+```javascript
+// ❌ Lento
+let removed = 0;
+for (const key of keys) {
+  if (await db.delete(key)) removed++;
+}
+
+// ✅ Rápido
+const removed = await db.deleteMany(keys);
+```

@@ -1,0 +1,242 @@
+
+# compare()
+
+Filtra registros usando operadores de comparação (>, <, >=, <=, ==, !=) em valores numéricos ou de data.
+
+## Sintaxe
+
+```javascript
+await db.compare(field, operator, value)
+```
+
+## Parâmetros
+
+- `field` (string): Nome da propriedade a ser comparada
+- `operator` (string): Operador de comparação ('>', '<', '>=', '<=', '==', '!=')
+- `value` (any): Valor para comparação
+
+## Retorno
+
+Retorna um array com os registros que atendem à condição especificada.
+
+## Exemplos
+
+### Comparação de Números
+
+```javascript
+const produtos = [
+  { id: 1, nome: 'Laptop', preco: 2500.00 },
+  { id: 2, nome: 'Mouse', preco: 50.00 },
+  { id: 3, nome: 'Teclado', preco: 150.00 },
+  { id: 4, nome: 'Monitor', preco: 800.00 },
+  { id: 5, nome: 'Webcam', preco: 200.00 }
+];
+
+await db.set('produtos', produtos);
+
+// Produtos com preço maior que 200
+const caros = await db.compare('preco', '>', 200);
+console.log(caros.length); // 3
+
+// Produtos com preço menor ou igual a 200
+const baratos = await db.compare('preco', '<=', 200);
+console.log(baratos.length); // 3
+
+// Produtos com preço exatamente 150
+const exato = await db.compare('preco', '==', 150);
+console.log(exato.length); // 1
+```
+
+### Comparação de Idades
+
+```javascript
+const funcionarios = [
+  { nome: 'João', idade: 25, salario: 5000 },
+  { nome: 'Maria', idade: 32, salario: 7000 },
+  { nome: 'Pedro', idade: 28, salario: 6000 },
+  { nome: 'Ana', idade: 35, salario: 8000 },
+  { nome: 'Carlos', idade: 22, salario: 4000 }
+];
+
+await db.set('funcionarios', funcionarios);
+
+// Funcionários com mais de 30 anos
+const senior = await db.compare('idade', '>', 30);
+console.log(senior.map(f => f.nome)); // ['Maria', 'Ana']
+
+// Funcionários jovens (até 25 anos)
+const jovens = await db.compare('idade', '<=', 25);
+console.log(jovens.map(f => f.nome)); // ['João', 'Carlos']
+
+// Funcionários que não têm 28 anos
+const nao28 = await db.compare('idade', '!=', 28);
+console.log(nao28.length); // 4
+```
+
+### Comparação de Datas
+
+```javascript
+const eventos = [
+  { nome: 'Reunião', data: new Date('2024-01-15'), participantes: 10 },
+  { nome: 'Workshop', data: new Date('2024-02-20'), participantes: 25 },
+  { nome: 'Conferência', data: new Date('2024-03-10'), participantes: 100 },
+  { nome: 'Treinamento', data: new Date('2024-01-30'), participantes: 15 }
+];
+
+await db.set('eventos', eventos);
+
+// Eventos após 1º de fevereiro
+const dataLimite = new Date('2024-02-01');
+const eventosFuturos = await db.compare('data', '>', dataLimite);
+console.log(eventosFuturos.length); // 2
+
+// Eventos até o final de janeiro
+const fimJaneiro = new Date('2024-01-31');
+const eventosJaneiro = await db.compare('data', '<=', fimJaneiro);
+console.log(eventosJaneiro.length); // 2
+```
+
+### Comparação de Scores/Pontuações
+
+```javascript
+const jogadores = [
+  { nome: 'João', score: 1500, nivel: 10 },
+  { nome: 'Maria', score: 2300, nivel: 15 },
+  { nome: 'Pedro', score: 800, nivel: 5 },
+  { nome: 'Ana', score: 3200, nivel: 20 },
+  { nome: 'Carlos', score: 1200, nivel: 8 }
+];
+
+await db.set('jogadores', jogadores);
+
+// Jogadores com score alto (>= 2000)
+const topPlayers = await db.compare('score', '>=', 2000);
+console.log(topPlayers.map(j => `${j.nome}: ${j.score}`));
+
+// Jogadores iniciantes (nivel < 10)
+const iniciantes = await db.compare('nivel', '<', 10);
+console.log(iniciantes.length); // 2
+```
+
+### Comparação de Quantidades em Estoque
+
+```javascript
+const estoque = [
+  { produto: 'Laptop', quantidade: 5, minimo: 3 },
+  { produto: 'Mouse', quantidade: 50, minimo: 20 },
+  { produto: 'Teclado', quantidade: 2, minimo: 5 },
+  { produto: 'Monitor', quantidade: 8, minimo: 2 },
+  { produto: 'Webcam', quantidade: 0, minimo: 1 }
+];
+
+await db.set('estoque', estoque);
+
+// Produtos em falta (quantidade <= 0)
+const emFalta = await db.compare('quantidade', '<=', 0);
+console.log(emFalta.map(p => p.produto)); // ['Webcam']
+
+// Produtos com estoque baixo (quantidade < minimo)
+const estoqueBaixo = await db.compare('quantidade', '<', 5);
+console.log(estoqueBaixo.map(p => p.produto)); // ['Teclado', 'Webcam']
+
+// Produtos com bom estoque (quantidade >= 10)
+const bomEstoque = await db.compare('quantidade', '>=', 10);
+console.log(bomEstoque.length); // 1
+```
+
+### Filtragem de Vendas por Período
+
+```javascript
+const vendas = [
+  { id: 1, valor: 500, mes: 1, ano: 2024 },
+  { id: 2, valor: 1200, mes: 2, ano: 2024 },
+  { id: 3, valor: 800, mes: 3, ano: 2024 },
+  { id: 4, valor: 2000, mes: 1, ano: 2023 },
+  { id: 5, valor: 300, mes: 4, ano: 2024 }
+];
+
+await db.set('vendas', vendas);
+
+// Vendas de 2024
+const vendas2024 = await db.compare('ano', '==', 2024);
+console.log(vendas2024.length); // 4
+
+// Vendas acima de R$ 1000
+const vendasAltas = await db.compare('valor', '>', 1000);
+console.log(vendasAltas.length); // 2
+
+// Vendas do primeiro trimestre (mês <= 3)
+const primeiroTrimestre = await db.compare('mes', '<=', 3);
+console.log(primeiroTrimestre.length); // 4
+```
+
+### Comparações Múltiplas
+
+```javascript
+// Função para aplicar múltiplas comparações
+async function filtroMultiplo(chave, filtros) {
+  let dados = await db.get(chave);
+  
+  for (const filtro of filtros) {
+    const { field, operator, value } = filtro;
+    const filtrados = await db.compare(field, operator, value);
+    
+    // Intersecção dos resultados
+    dados = dados.filter(item => 
+      filtrados.some(f => f.id === item.id)
+    );
+  }
+  
+  return dados;
+}
+
+// Exemplo: Funcionários seniores com alto salário
+const filtros = [
+  { field: 'idade', operator: '>', value: 30 },
+  { field: 'salario', operator: '>=', value: 7000 }
+];
+
+const funcionariosSeniorSalarioAlto = await filtroMultiplo('funcionarios', filtros);
+console.log(funcionariosSeniorSalarioAlto);
+```
+
+### Estatísticas com Comparações
+
+```javascript
+// Função para obter estatísticas baseadas em comparações
+async function obterEstatisticas(chave, campo) {
+  const dados = await db.get(chave);
+  const valores = dados.map(item => item[campo]).filter(v => typeof v === 'number');
+  
+  if (valores.length === 0) return null;
+  
+  const min = Math.min(...valores);
+  const max = Math.max(...valores);
+  const media = valores.reduce((a, b) => a + b) / valores.length;
+  
+  const acimaDaMedia = await db.compare(campo, '>', media);
+  const abaixoDaMedia = await db.compare(campo, '<', media);
+  
+  return {
+    min,
+    max,
+    media: Math.round(media * 100) / 100,
+    total: valores.length,
+    acimaDaMedia: acimaDaMedia.length,
+    abaixoDaMedia: abaixoDaMedia.length
+  };
+}
+
+const statsPrecos = await obterEstatisticas('produtos', 'preco');
+const statsIdades = await obterEstatisticas('funcionarios', 'idade');
+```
+
+## Notas
+
+- Funciona com números, datas e strings (comparação lexicográfica)
+- Para datas, use objetos Date() para comparação adequada
+- Operadores suportados: '>', '<', '>=', '<=', '==', '!='
+- Retorna array vazio se nenhum registro atender à condição
+- Para strings, a comparação é lexicográfica (ordem alfabética)
+- Se a chave não existir, retorna um array vazio
+- Se o campo não existir no registro, o registro é ignorado

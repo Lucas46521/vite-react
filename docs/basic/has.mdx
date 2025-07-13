@@ -1,0 +1,135 @@
+
+# has() - Verificar Existência
+
+O método `has()` verifica se uma chave existe no banco de dados, retornando `true` ou `false`.
+
+## Sintaxe
+
+```javascript
+await db.has(key)
+```
+
+## Parâmetros
+
+- **key** (`string`): A chave a ser verificada
+
+## Retorno
+
+- **boolean**: `true` se a chave existe, `false` caso contrário
+
+## Exemplos
+
+### Verificação Básica
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Definir dados
+await db.set('user:1', { name: 'João' });
+
+// Verificar existência
+const exists = await db.has('user:1');
+console.log(exists); // true
+
+const notExists = await db.has('user:999');
+console.log(notExists); // false
+```
+
+### Verificação Condicional
+```javascript
+// Verificar antes de acessar
+if (await db.has('config:theme')) {
+    const theme = await db.get('config:theme');
+    console.log('Tema atual:', theme);
+} else {
+    console.log('Tema não configurado');
+}
+```
+
+### Verificação em Lote
+```javascript
+const keys = ['user:1', 'user:2', 'user:3'];
+const results = {};
+
+for (const key of keys) {
+    results[key] = await db.has(key);
+}
+
+console.log(results);
+// { 'user:1': true, 'user:2': false, 'user:3': true }
+```
+
+### Validação de Dados
+```javascript
+async function updateUser(userId, data) {
+    const userKey = `user:${userId}`;
+    
+    if (!(await db.has(userKey))) {
+        throw new Error('Usuário não encontrado');
+    }
+    
+    // Prosseguir com atualização
+    await db.set(userKey, data);
+}
+```
+
+## Casos de Uso
+
+### 🔍 **Validação de Entrada**
+```javascript
+async function deleteUser(userId) {
+    if (!(await db.has(`user:${userId}`))) {
+        return { error: 'Usuário não encontrado' };
+    }
+    
+    await db.delete(`user:${userId}`);
+    return { success: true };
+}
+```
+
+### 📊 **Estatísticas**
+```javascript
+async function getUserStats() {
+    const totalUsers = await db.count('user:*');
+    const activeUsers = 0;
+    
+    for (let i = 1; i <= totalUsers; i++) {
+        if (await db.has(`user:${i}`)) {
+            const user = await db.get(`user:${i}`);
+            if (user.status === 'active') activeUsers++;
+        }
+    }
+    
+    return { total: totalUsers, active: activeUsers };
+}
+```
+
+### 🔄 **Cache Inteligente**
+```javascript
+async function getCachedData(key) {
+    const cacheKey = `cache:${key}`;
+    
+    if (await db.has(cacheKey)) {
+        return await db.get(cacheKey);
+    }
+    
+    // Buscar dados da fonte
+    const data = await fetchFromAPI(key);
+    await db.set(cacheKey, data);
+    
+    return data;
+}
+```
+
+## Performance
+
+- **Complexidade**: O(1) - Tempo constante
+- **Uso de memória**: Mínimo
+- **Ideal para**: Validações rápidas e verificações condicionais
+
+## Notas
+
+- Não gera erro se a chave não existir
+- Funciona com qualquer tipo de chave válida
+- Operação muito rápida em todos os drivers
+- Útil para evitar erros em operações subsequentes

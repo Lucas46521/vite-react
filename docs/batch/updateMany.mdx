@@ -1,0 +1,85 @@
+
+---
+title: updateMany()
+description: Atualiza múltiplos valores em uma única operação
+---
+
+# updateMany()
+
+Atualiza múltiplos valores aplicando uma função ou objeto de atualização em uma única operação.
+
+## Sintaxe
+
+```typescript
+await db.updateMany(
+  keys: string[], 
+  updater: ((value: any, key: string) => any) | Record<string, any>
+): Promise<number>
+```
+
+## Parâmetros
+
+- `keys`: Array de chaves para atualizar
+- `updater`: Função de atualização ou objeto com novos valores
+
+## Retorno
+
+Número de chaves atualizadas com sucesso.
+
+## Exemplos
+
+### Atualização com Função
+```javascript
+await db.setMany({
+  'user:1': { name: 'João', age: 25, active: true },
+  'user:2': { name: 'Maria', age: 30, active: false },
+  'user:3': { name: 'Pedro', age: 35, active: true }
+});
+
+// Incrementar idade de todos os usuários
+const updated = await db.updateMany(
+  ['user:1', 'user:2', 'user:3'],
+  (user) => ({ ...user, age: user.age + 1 })
+);
+console.log(updated); // 3
+```
+
+### Atualização com Objeto
+```javascript
+// Ativar todos os usuários
+const updated = await db.updateMany(
+  ['user:1', 'user:2', 'user:3'],
+  { active: true, lastUpdate: new Date() }
+);
+```
+
+### Atualização Condicional
+```javascript
+// Aplicar desconto apenas para usuários VIP
+const updated = await db.updateMany(
+  ['order:1', 'order:2', 'order:3'],
+  (order, key) => {
+    if (order.userType === 'VIP') {
+      return { ...order, discount: 0.1, total: order.total * 0.9 };
+    }
+    return order;
+  }
+);
+```
+
+### Normalização de Dados
+```javascript
+// Padronizar formato de telefone
+const phoneKeys = await db.search('phone:');
+const updated = await db.updateMany(
+  phoneKeys.map(item => item.key),
+  (phone) => phone.replace(/\D/g, '') // Remove caracteres não numéricos
+);
+```
+
+## Casos de Uso
+
+- Atualizações em lote de configurações
+- Migração de dados
+- Aplicação de transformações uniformes
+- Sincronização de estados
