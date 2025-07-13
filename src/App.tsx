@@ -100,33 +100,69 @@ const docsStructure = {
   }
 }
 
-function Sidebar() {
+interface SidebarProps {
+  isCollapsed: boolean;
+  onToggle: () => void;
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
+}
+
+function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
   return (
-    <nav className="sidebar">
-      <div className="sidebar-header">
-        <h2>📚 Helper.DB Wiki</h2>
-      </div>
-      <div className="sidebar-content">
-        {Object.entries(docsStructure).map(([categoryName, category]) => (
-          <div key={categoryName} className="category">
-            <h3>{categoryName}</h3>
-            {Object.entries(category as Record<string, Record<string, string>>).map(([folder, pages]) => (
-              <div key={folder} className="folder">
-                {Object.entries(pages).map(([page]) => (
-                  <Link
-                    key={page}
-                    to={`/docs/${folder}/${page}`}
-                    className="page-link"
-                  >
-                    {page}
-                  </Link>
+    <>
+      {/* Mobile overlay */}
+      <div 
+        className={`mobile-overlay ${isMobileOpen ? 'active' : ''}`}
+        onClick={onMobileClose}
+      />
+      
+      <nav className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <h2>📚 Helper.DB Wiki</h2>
+          <button className="collapse-btn desktop-only" onClick={onToggle}>
+            {isCollapsed ? '→' : '←'}
+          </button>
+          <button className="close-btn mobile-only" onClick={onMobileClose}>
+            ✕
+          </button>
+        </div>
+        
+        {!isCollapsed && (
+          <div className="sidebar-content">
+            {Object.entries(docsStructure).map(([categoryName, category]) => (
+              <div key={categoryName} className="category">
+                <h3>{categoryName}</h3>
+                {Object.entries(category as Record<string, Record<string, string>>).map(([folder, pages]) => (
+                  <div key={folder} className="folder">
+                    {Object.entries(pages).map(([page]) => (
+                      <Link
+                        key={page}
+                        to={`/docs/${folder}/${page}`}
+                        className="page-link"
+                        onClick={onMobileClose}
+                      >
+                        {page}
+                      </Link>
+                    ))}
+                  </div>
                 ))}
               </div>
             ))}
           </div>
-        ))}
-      </div>
-    </nav>
+        )}
+      </nav>
+    </>
+  )
+}
+
+function Header({ onMenuClick }: { onMenuClick: () => void }) {
+  return (
+    <header className="header">
+      <button className="menu-btn mobile-only" onClick={onMenuClick}>
+        ☰
+      </button>
+      <h1 className="header-title">Helper.DB Wiki</h1>
+    </header>
   )
 }
 
@@ -195,11 +231,36 @@ function DocPage() {
 }
 
 function App() {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
+
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed)
+  const openMobileSidebar = () => setIsMobileOpen(true)
+  const closeMobileSidebar = () => setIsMobileOpen(false)
+
+  // Close mobile sidebar on window resize to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsMobileOpen(false)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
     <Router>
       <div className="app">
-        <Sidebar />
-        <main className="main-content">
+        <Header onMenuClick={openMobileSidebar} />
+        <Sidebar 
+          isCollapsed={isCollapsed}
+          onToggle={toggleSidebar}
+          isMobileOpen={isMobileOpen}
+          onMobileClose={closeMobileSidebar}
+        />
+        <main className={`main-content ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/docs/:folder/:page" element={<DocPage />} />
