@@ -4,7 +4,6 @@ import mdx from '@astrojs/mdx';
 import tailwind from '@astrojs/tailwind';
 import starlight from '@astrojs/starlight';
 import starlightImageZoom from 'starlight-image-zoom';
-import starlightSidebarTopics from 'starlight-sidebar-topics';
 
 export default defineConfig({
   build: {
@@ -16,24 +15,7 @@ export default defineConfig({
       title: 'Helper.DB Wiki',
       description: 'Documentação completa do Helper.DB',
       plugins: [
-        starlightImageZoom(),
-        starlightSidebarTopics([
-          {
-            label: 'Operações Básicas',
-            link: '/docs/basic/',
-            icon: 'document'
-          },
-          {
-            label: 'Arrays',
-            link: '/docs/arrays/',
-            icon: 'list-format'
-          },
-          {
-            label: 'Busca',
-            link: '/docs/search/',
-            icon: 'magnifier'
-          }
-        ])
+        starlightImageZoom()
       ],
       social: [
         {
