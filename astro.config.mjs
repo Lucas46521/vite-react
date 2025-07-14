@@ -3,7 +3,6 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import tailwind from '@astrojs/tailwind';
 import starlight from '@astrojs/starlight';
-import starlightLinksValidator from '@astrojs/starlight-links-validator';
 import starlightImageZoom from 'starlight-image-zoom';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 
@@ -17,7 +16,6 @@ export default defineConfig({
       title: 'Helper.DB Wiki',
       description: 'Documentação completa do Helper.DB',
       plugins: [
-        starlightLinksValidator(),
         starlightImageZoom(),
         starlightSidebarTopics([
           {
