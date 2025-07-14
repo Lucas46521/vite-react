@@ -1,4 +1,3 @@
-
 ---
 import { Content as WelcomeContent } from '../content/docs/index.mdx';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
@@ -24,14 +23,14 @@ import Search from "astro-pagefind/components/Search";
         Simplifique suas operações de banco de dados com uma API unificada que suporta 
         JSON, SQLite, MySQL, MariaDB, MongoDB e muito mais.
       </p>
-      
+
       <!-- Componente de busca integrado -->
       <div class="search-container">
         <h3>🔍 Buscar na Documentação</h3>
         <Search 
           id="search" 
           className="pagefind-ui" 
-          uiOptions={{ 
+          uiOptions={{
             showImages: false,
             placeholder: "Busque por métodos, exemplos...",
             translations: {
@@ -47,7 +46,7 @@ import Search from "astro-pagefind/components/Search";
               search_suggestion: "Para buscar por [SEARCH_TERM], tente:",
               searching: "Buscando por [SEARCH_TERM]..."
             }
-          }} 
+          }}
         />
       </div>
 
@@ -56,27 +55,27 @@ import Search from "astro-pagefind/components/Search";
           <h3>🚀 Múltiplos Drivers</h3>
           <p>Suporte para JSON, SQLite, MySQL, MariaDB, MongoDB e Memory</p>
         </div>
-        
+
         <div class="feature-card">
           <h3>⚡ Alta Performance</h3>
           <p>Operações otimizadas com cache e transações</p>
         </div>
-        
+
         <div class="feature-card">
           <h3>🔧 API Simples</h3>
           <p>Interface intuitiva e consistente para todas as operações</p>
         </div>
-        
+
         <div class="feature-card">
           <h3>🛡️ Backup Automático</h3>
           <p>Sistema de backup e restore integrado</p>
         </div>
-        
+
         <div class="feature-card">
           <h3>📊 Estatísticas</h3>
           <p>Funções avançadas de agregação e análise</p>
         </div>
-        
+
         <div class="feature-card">
           <h3>🔍 Busca Avançada</h3>
           <p>Sistema de busca poderoso com regex e filtros</p>
@@ -216,11 +215,11 @@ console.log(usuario); // { nome: 'João', idade: 25 }</code></pre>
     .hero-title {
       font-size: 2.5rem;
     }
-    
+
     .features-grid {
       grid-template-columns: 1fr;
     }
-    
+
     .search-container,
     .quick-start {
       margin-left: 1rem;
@@ -228,4 +227,3 @@ console.log(usuario); // { nome: 'João', idade: 25 }</code></pre>
     }
   }
 </style>
-</pre>
