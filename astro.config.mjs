@@ -16,7 +16,8 @@ export default defineConfig({
       social: [
         {
           label: 'GitHub',
-          link: 'https://github.com/seu-repo/helper-db',
+          icon: 'github',
+          href: 'https://github.com/seu-repo/helper-db',
         },
       ],
       sidebar: [
