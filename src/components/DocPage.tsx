@@ -1,3 +1,4 @@
+
 // components/DocPage.tsx
 import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
@@ -46,37 +47,31 @@ export function DocPage() {
 
   if (error) {
     return (
-      <main className="p-4 space-y-4">
+      <main className="p-4">
         <Card>
-          <CardContent>
-            <h2 className="text-xl font-bold mb-2">❌ Erro</h2>
-            <p>{error}</p>
+          <CardContent className="py-8 text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button asChild>
+              <Link to="/">Voltar ao início</Link>
+            </Button>
           </CardContent>
         </Card>
-        <Button variant="link" asChild>
-          <Link to="/">← Voltar ao Início</Link>
-        </Button>
       </main>
     )
   }
 
   return (
-    <main className="p-4 space-y-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link to="/">Home</Link>
-        <span>/</span>
-        <span>{folder}</span>
-        <span>/</span>
-        <span>{page}</span>
+    <main className="p-4 max-w-4xl mx-auto">
+      <div className="mb-4">
+        <Button variant="outline" asChild>
+          <Link to="/">← Voltar</Link>
+        </Button>
       </div>
       <Card>
-        <CardContent>
+        <CardContent className="p-6">
           <MarkdownRenderer content={content} />
         </CardContent>
       </Card>
-      <Button variant="link" asChild>
-        <Link to="/">← Voltar ao Início</Link>
-      </Button>
     </main>
   )
 }
