@@ -1,0 +1,39 @@
+
+---
+import Layout from '../layouts/Layout.astro';
+import { docsStructure } from '../lib/docsStructure';
+---
+
+<Layout title="Helper.DB - Documentação">
+  <main class="container mx-auto px-4 py-8">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">Helper.DB</h1>
+      <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+        Uma biblioteca JavaScript poderosa e flexível para trabalhar com diferentes tipos de banco de dados
+        de forma simples e unificada.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {docsStructure.map((category) => (
+        <div class="bg-white rounded-lg shadow-md p-6 border">
+          <div class="flex items-center mb-4">
+            <span class="text-2xl mr-3">{category.icon}</span>
+            <h2 class="text-xl font-semibold text-gray-800">{category.title}</h2>
+          </div>
+          <p class="text-gray-600 mb-4">{category.description}</p>
+          <div class="space-y-2">
+            {category.items.map((item) => (
+              <a 
+                href={`/docs/${category.slug}/${item.slug}`}
+                class="block text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {item.title}
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </main>
+</Layout>

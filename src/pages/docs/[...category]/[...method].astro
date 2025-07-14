@@ -1,0 +1,75 @@
+
+---
+import Layout from '../../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const docs = await Astro.glob('../../../docs/**/*.mdx');
+  
+  return docs.map((doc) => {
+    const pathParts = doc.file.split('/').slice(-2);
+    const category = pathParts[0];
+    const method = pathParts[1].replace('.mdx', '');
+    
+    return {
+      params: { category, method },
+      props: { doc }
+    };
+  });
+}
+
+const { category, method } = Astro.params;
+const { doc } = Astro.props;
+const { Content, frontmatter } = doc;
+---
+
+<Layout title={`${method} - Helper.DB`}>
+  <div class="container mx-auto px-4 py-8">
+    <nav class="mb-8">
+      <a href="/" class="text-blue-600 hover:underline">Início</a>
+      <span class="mx-2 text-gray-500">/</span>
+      <a href={`/docs/${category}`} class="text-blue-600 hover:underline capitalize">{category}</a>
+      <span class="mx-2 text-gray-500">/</span>
+      <span class="text-gray-800">{method}</span>
+    </nav>
+
+    <article class="bg-white rounded-lg shadow-sm border p-8">
+      <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">{frontmatter?.title || method}</h1>
+        {frontmatter?.description && (
+          <p class="text-xl text-gray-600">{frontmatter.description}</p>
+        )}
+      </header>
+
+      <div class="prose prose-lg max-w-none">
+        <Content />
+      </div>
+    </article>
+  </div>
+</Layout>
+
+<style>
+  .prose {
+    @apply text-gray-800;
+  }
+  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    @apply text-gray-900 font-semibold;
+  }
+  .prose h2 {
+    @apply text-2xl mt-8 mb-4;
+  }
+  .prose h3 {
+    @apply text-xl mt-6 mb-3;
+  }
+  .prose code {
+    @apply bg-gray-100 px-2 py-1 rounded text-sm;
+  }
+  .prose pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto;
+  }
+  .prose pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose blockquote {
+    @apply border-l-4 border-blue-500 pl-4 italic;
+  }
+</style>

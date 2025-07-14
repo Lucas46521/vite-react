@@ -1,0 +1,74 @@
+
+---
+title: "get - Obter Valores"
+description: "Método para obter valores do banco de dados"
+---
+
+# get - Obter Valores
+
+O método `get` é usado para recuperar valores armazenados no banco de dados.
+
+## Sintaxe
+
+```javascript
+db.get(key, defaultValue?)
+```
+
+## Parâmetros
+
+- **key** (string): A chave do valor a ser recuperado
+- **defaultValue** (any, opcional): Valor padrão a ser retornado se a chave não existir
+
+## Exemplos
+
+### Exemplo Básico
+
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Definir alguns valores
+db.set('nome', 'João');
+db.set('idade', 30);
+
+// Obter valores
+console.log(db.get('nome')); // Output: 'João'
+console.log(db.get('idade')); // Output: 30
+```
+
+### Exemplo com Valor Padrão
+
+```javascript
+// Obter valor que não existe com valor padrão
+console.log(db.get('email', 'não informado')); // Output: 'não informado'
+
+// Obter valor que não existe sem valor padrão
+console.log(db.get('telefone')); // Output: undefined
+```
+
+### Exemplo com Objetos Aninhados
+
+```javascript
+db.set('usuario', {
+  nome: 'Maria',
+  config: {
+    tema: 'escuro',
+    idioma: 'pt-BR'
+  }
+});
+
+// Usar notação de ponto para acessar valores aninhados
+console.log(db.get('usuario.nome')); // Output: 'Maria'
+console.log(db.get('usuario.config.tema')); // Output: 'escuro'
+console.log(db.get('usuario.config.notificacoes', true)); // Output: true (valor padrão)
+```
+
+## Retorno
+
+Retorna o valor associado à chave ou o valor padrão se especificado e a chave não existir.
+
+## Notas
+
+- Suporta notação de ponto para objetos aninhados
+- Se a chave não existir e nenhum valor padrão for fornecido, retorna `undefined`
+- Preserva o tipo original do valor armazenado

@@ -1,0 +1,63 @@
+
+---
+title: "set - Definir Valores"
+description: "Método para definir valores no banco de dados"
+---
+
+# set - Definir Valores
+
+O método `set` é usado para definir ou atualizar valores no banco de dados.
+
+## Sintaxe
+
+```javascript
+db.set(key, value)
+```
+
+## Parâmetros
+
+- **key** (string): A chave onde o valor será armazenado
+- **value** (any): O valor a ser armazenado
+
+## Exemplos
+
+### Exemplo Básico
+
+```javascript
+const { HelperDB } = require('helper.db');
+const db = new HelperDB();
+
+// Definir um valor simples
+db.set('usuario', 'João');
+
+// Definir um objeto
+db.set('config', {
+  tema: 'escuro',
+  idioma: 'pt-BR'
+});
+
+// Definir um array
+db.set('frutas', ['maçã', 'banana', 'laranja']);
+```
+
+### Exemplo com Objetos Aninhados
+
+```javascript
+// Definir valores em objetos aninhados usando notação de ponto
+db.set('usuario.nome', 'Maria');
+db.set('usuario.idade', 25);
+db.set('usuario.preferencias.tema', 'claro');
+
+console.log(db.get('usuario'));
+// Output: { nome: 'Maria', idade: 25, preferencias: { tema: 'claro' } }
+```
+
+## Retorno
+
+O método `set` retorna `true` quando a operação é bem-sucedida.
+
+## Notas
+
+- Se a chave já existir, o valor será substituído
+- Suporta notação de ponto para objetos aninhados
+- Aceita qualquer tipo de valor JavaScript válido
