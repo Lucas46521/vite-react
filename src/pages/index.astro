@@ -1,3 +1,4 @@
+
 ---
 import { Content as WelcomeContent } from '../content/docs/index.mdx';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
@@ -24,7 +25,6 @@ import Search from "astro-pagefind/components/Search";
         JSON, SQLite, MySQL, MariaDB, MongoDB e muito mais.
       </p>
 
-      <!-- Componente de busca integrado -->
       <div class="search-container">
         <h3>🔍 Buscar na Documentação</h3>
         <Search 
@@ -95,6 +95,53 @@ db.set('usuario', { nome: 'João', idade: 25 });
 // Recuperar dados
 const usuario = db.get('usuario');
 console.log(usuario); // { nome: 'João', idade: 25 }</code></pre>
+      </div>
+
+      <div class="categories-overview">
+        <h3>Categorias de Métodos</h3>
+        <div class="categories-grid">
+          <a href="/docs/basic/get/" class="category-link">
+            <div class="category-card">
+              <h4>📁 Básicos</h4>
+              <p>get, set, has, delete, all</p>
+            </div>
+          </a>
+          
+          <a href="/docs/arrays/push/" class="category-link">
+            <div class="category-card">
+              <h4>📊 Arrays</h4>
+              <p>push, pop, filter, map, reduce</p>
+            </div>
+          </a>
+          
+          <a href="/docs/search/search/" class="category-link">
+            <div class="category-card">
+              <h4>🔍 Busca</h4>
+              <p>search, startsWith, regex, custom</p>
+            </div>
+          </a>
+          
+          <a href="/docs/math/add/" class="category-link">
+            <div class="category-card">
+              <h4>🔢 Matemática</h4>
+              <p>add, sub, operações numéricas</p>
+            </div>
+          </a>
+          
+          <a href="/docs/stats/count/" class="category-link">
+            <div class="category-card">
+              <h4>📈 Estatísticas</h4>
+              <p>count, sum, avg, min, max</p>
+            </div>
+          </a>
+          
+          <a href="/docs/backup/backup/" class="category-link">
+            <div class="category-card">
+              <h4>💾 Backup</h4>
+              <p>backup, restore, export, import</p>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -188,7 +235,7 @@ console.log(usuario); // { nome: 'João', idade: 25 }</code></pre>
     background: var(--sl-color-gray-1);
     border-radius: 1rem;
     padding: 2rem;
-    margin-top: 3rem;
+    margin: 3rem 0;
     text-align: left;
   }
 
@@ -204,11 +251,60 @@ console.log(usuario); // { nome: 'João', idade: 25 }</code></pre>
     border-radius: 0.5rem;
     padding: 1rem;
     overflow-x: auto;
+    margin: 0;
   }
 
   .quick-start code {
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 0.875rem;
+    color: var(--sl-color-gray-8);
+  }
+
+  .categories-overview {
+    margin-top: 4rem;
+  }
+
+  .categories-overview h3 {
+    color: var(--sl-color-accent);
+    margin-bottom: 2rem;
+  }
+
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+
+  .category-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .category-card {
+    background: var(--sl-color-white);
+    border: 1px solid var(--sl-color-gray-3);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--sl-color-accent);
+  }
+
+  .category-card h4 {
+    color: var(--sl-color-accent);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+  }
+
+  .category-card p {
+    color: var(--sl-color-gray-6);
+    margin: 0;
+    font-size: 0.9rem;
   }
 
   @media (max-width: 768px) {
@@ -220,6 +316,10 @@ console.log(usuario); // { nome: 'João', idade: 25 }</code></pre>
       grid-template-columns: 1fr;
     }
 
+    .categories-grid {
+      grid-template-columns: 1fr;
+    }
+
     .search-container,
     .quick-start {
       margin-left: 1rem;
@@ -227,3 +327,4 @@ console.log(usuario); // { nome: 'João', idade: 25 }</code></pre>
     }
   }
 </style>
+</StarlightPage>
