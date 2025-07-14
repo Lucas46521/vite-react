@@ -13,9 +13,12 @@ export default defineConfig({
     starlight({
       title: 'Helper.DB Wiki',
       description: 'Documentação completa do Helper.DB',
-      social: {
-        github: 'https://github.com/seu-repo/helper-db',
-      },
+      social: [
+        {
+          label: 'GitHub',
+          link: 'https://github.com/seu-repo/helper-db',
+        },
+      ],
       sidebar: [
         {
           label: 'Início',
