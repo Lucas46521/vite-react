@@ -9,6 +9,7 @@ export default defineConfig({
   build: {
     format: "file",
   },
+  output: 'static',
   integrations: [
     starlight({
       title: 'Helper.DB Wiki',
