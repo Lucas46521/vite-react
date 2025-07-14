@@ -1,0 +1,105 @@
+
+/* Estilos customizados para o tema Helper.DB */
+:root {
+  --sl-color-accent-low: #0ea5e9;
+  --sl-color-accent: #0284c7;
+  --sl-color-accent-high: #0369a1;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f8fafc;
+  --sl-color-gray-2: #f1f5f9;
+  --sl-color-gray-3: #e2e8f0;
+  --sl-color-gray-4: #cbd5e1;
+  --sl-color-gray-5: #94a3b8;
+  --sl-color-gray-6: #64748b;
+  --sl-color-black: #1e293b;
+}
+
+[data-theme='dark'] {
+  --sl-color-accent-low: #0f172a;
+  --sl-color-accent: #0ea5e9;
+  --sl-color-accent-high: #38bdf8;
+  --sl-color-white: #1e293b;
+  --sl-color-gray-1: #0f172a;
+  --sl-color-gray-2: #1e293b;
+  --sl-color-gray-3: #334155;
+  --sl-color-gray-4: #475569;
+  --sl-color-gray-5: #64748b;
+  --sl-color-gray-6: #94a3b8;
+  --sl-color-black: #f8fafc;
+}
+
+/* Estilo do componente de busca */
+.pagefind-ui {
+  margin: 2rem 0;
+}
+
+.pagefind-ui__search-input {
+  border: 2px solid var(--sl-color-gray-3);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  width: 100%;
+  background: var(--sl-color-white);
+  color: var(--sl-color-black);
+  transition: border-color 0.2s ease;
+}
+
+.pagefind-ui__search-input:focus {
+  outline: none;
+  border-color: var(--sl-color-accent);
+  box-shadow: 0 0 0 3px var(--sl-color-accent-low);
+}
+
+/* Melhorias na tipografia */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3 {
+  color: var(--sl-color-accent);
+}
+
+.sl-markdown-content code {
+  background: var(--sl-color-gray-2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.sl-markdown-content pre {
+  background: var(--sl-color-gray-1);
+  border: 1px solid var(--sl-color-gray-3);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+/* Estilo para destacar informações importantes */
+.helper-tip {
+  background: linear-gradient(135deg, var(--sl-color-accent-low), var(--sl-color-accent));
+  border-left: 4px solid var(--sl-color-accent);
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+  color: white;
+}
+
+.helper-warning {
+  background: linear-gradient(135deg, #fef3c7, #f59e0b);
+  border-left: 4px solid #f59e0b;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+  color: #92400e;
+}
+
+/* Animações suaves */
+.sl-nav-link:hover {
+  transform: translateX(4px);
+  transition: transform 0.2s ease;
+}
+
+/* Responsividade melhorada */
+@media (max-width: 768px) {
+  .pagefind-ui__search-input {
+    font-size: 0.875rem;
+  }
+}

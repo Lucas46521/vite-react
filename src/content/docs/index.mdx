@@ -1,0 +1,124 @@
+
+---
+title: Bem-vindo ao Helper.DB
+description: Documentação completa da biblioteca Helper.DB para gerenciamento de dados em JavaScript
+template: splash
+hero:
+  tagline: Biblioteca JavaScript poderosa para gerenciamento de dados com suporte a múltiplos drivers
+  image:
+    file: ../../assets/hero.svg
+  actions:
+    - text: Começar agora
+      link: /docs/basic/get/
+      icon: right-arrow
+    - text: Ver no GitHub
+      link: https://github.com/seu-repo/helper-db
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## O que é o Helper.DB?
+
+Helper.DB é uma biblioteca JavaScript moderna e poderosa que simplifica o gerenciamento de dados, oferecendo uma API unificada e intuitiva para trabalhar com diferentes tipos de bancos de dados.
+
+<CardGrid>
+  <Card title="Múltiplos Drivers" icon="setting">
+    Suporte nativo para JSON, SQLite, MySQL, MariaDB, MongoDB e Memory
+  </Card>
+  
+  <Card title="API Simples" icon="pencil">
+    Interface consistente e fácil de usar para todas as operações
+  </Card>
+  
+  <Card title="Alta Performance" icon="rocket">
+    Operações otimizadas com sistema de cache integrado
+  </Card>
+  
+  <Card title="Backup Automático" icon="approve-check">
+    Sistema completo de backup e restore dos seus dados
+  </Card>
+</CardGrid>
+
+## Instalação Rápida
+
+```bash
+npm install helper.db
+```
+
+## Exemplo Básico
+
+```javascript
+const db = require('helper.db');
+
+// Configurar o driver (opcional - padrão é JSON)
+db.config({
+  driver: 'json',
+  path: './database.json'
+});
+
+// Operações básicas
+db.set('usuario:1', {
+  nome: 'João Silva',
+  email: 'joao@email.com',
+  idade: 28
+});
+
+const usuario = db.get('usuario:1');
+console.log(usuario); // { nome: 'João Silva', email: 'joao@email.com', idade: 28 }
+
+// Verificar se existe
+if (db.has('usuario:1')) {
+  console.log('Usuário encontrado!');
+}
+
+// Listar todos os dados
+const todos = db.all();
+console.log(todos);
+```
+
+## Principais Categorias
+
+### 🔧 [Operações Básicas](/docs/basic/get/)
+Aprenda as operações fundamentais: `get`, `set`, `has`, `delete` e `all`.
+
+### 📝 [Operações de Array](/docs/arrays/push/)
+Manipule arrays diretamente no banco: `push`, `pop`, `pull`, `map`, `filter` e muito mais.
+
+### ⚡ [Operações em Lote](/docs/batch/getMany/)
+Execute múltiplas operações simultaneamente para melhor performance.
+
+### 🔍 [Sistema de Busca](/docs/search/search/)
+Busque dados com critérios avançados usando regex, comparações e filtros.
+
+### 📊 [Estatísticas](/docs/stats/count/)
+Analise seus dados com funções de agregação: `count`, `sum`, `avg`, `min`, `max`.
+
+### 🔢 [Operações Matemáticas](/docs/math/add/)
+Execute operações matemáticas diretamente nos valores: `add`, `sub`.
+
+### 💾 [Backup e Restore](/docs/backup/backup/)
+Proteja seus dados com sistema completo de backup automático.
+
+### 🔌 [Drivers](/docs/drivers/json/)
+Configure e utilize diferentes tipos de banco de dados.
+
+## Por que escolher Helper.DB?
+
+- **🚀 Fácil de usar**: API intuitiva que você aprende em minutos
+- **⚡ Alta performance**: Otimizado para operações rápidas e eficientes  
+- **🔄 Flexível**: Funciona com qualquer tipo de dados JavaScript
+- **🛡️ Confiável**: Sistema robusto de backup e validação
+- **📈 Escalável**: Do desenvolvimento à produção
+- **🎯 Focado**: Sem dependências desnecessárias
+
+## Próximos Passos
+
+1. **[Começar com operações básicas](/docs/basic/get/)** - Aprenda o essencial
+2. **[Configurar seu driver](/docs/drivers/json/)** - Escolha o melhor para seu projeto  
+3. **[Explorar funcionalidades avançadas](/docs/search/search/)** - Descubra todo o potencial
+
+---
+
+**💡 Dica**: Use a busca no topo da página para encontrar rapidamente qualquer método ou exemplo específico!
