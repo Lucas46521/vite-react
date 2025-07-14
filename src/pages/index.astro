@@ -1,7 +1,6 @@
 ---
 import { Content as WelcomeContent } from '../content/docs/index.mdx';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import Search from 'astro-pagefind/components/Search';
 ---
 
 <StarlightPage 
@@ -23,31 +22,7 @@ import Search from 'astro-pagefind/components/Search';
         Simplifique operações de banco de dados com uma API unificada para JSON, SQLite, MySQL, MariaDB, MongoDB e outros formatos.
       </p>
 
-      <div class="search-container">
-        <h2 class="search-title">🔍 Pesquisar na Documentação</h2>
-        <Search 
-          id="search" 
-          className="pagefind-ui" 
-          aria-label="Pesquisar na documentação do Helper.DB"
-          uiOptions={{
-            showImages: false,
-            placeholder: 'Digite métodos, exemplos ou tópicos...',
-            translations: {
-              placeholder: 'Pesquisar na documentação...',
-              clear_search: 'Limpar',
-              load_more: 'Ver mais resultados',
-              search_label: 'Pesquisar no site',
-              filters_label: 'Filtros',
-              zero_results: 'Nenhum resultado para "[SEARCH_TERM]"',
-              many_results: '[COUNT] resultados para "[SEARCH_TERM]"',
-              one_result: '[COUNT] resultado para "[SEARCH_TERM]"',
-              alt_search: 'Nenhum resultado para "[SEARCH_TERM]". Veja resultados para "[DIFFERENT_TERM]"',
-              search_suggestion: 'Tente buscar por "[SEARCH_TERM]"',
-              searching: 'Pesquisando por "[SEARCH_TERM]"...'
-            }
-          }}
-        />
-      </div>
+      
 
       <div class="features-grid">
         <div class="feature-card">
@@ -183,20 +158,7 @@ console.log(usuario); // { nome: 'Ana', idade: 30 }</code></pre>
     margin: 0 auto 2.5rem;
   }
 
-  .search-container {
-    background: var(--sl-color-gray-1);
-    border: 1px solid var(--sl-color-gray-3);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin: 2rem auto 3rem;
-    max-width: 640px;
-  }
-
-  .search-title {
-    margin: 0 0 1rem;
-    color: var(--sl-color-accent);
-    font-size: 1.25rem;
-  }
+  
 
   .features-grid {
     display: grid;
@@ -322,7 +284,6 @@ console.log(usuario); // { nome: 'Ana', idade: 30 }</code></pre>
       grid-template-columns: 1fr;
     }
 
-    .search-container,
     .quick-start {
       margin-left: 1rem;
       margin-right: 1rem;

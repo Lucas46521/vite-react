@@ -2,8 +2,10 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import tailwind from '@astrojs/tailwind';
-import pagefind from 'astro-pagefind';
 import starlight from '@astrojs/starlight';
+import starlightLinksValidator from '@astrojs/starlight-links-validator';
+import starlightImageZoom from 'starlight-image-zoom';
+import starlightSidebarTopics from 'starlight-sidebar-topics';
 
 export default defineConfig({
   build: {
@@ -14,6 +16,27 @@ export default defineConfig({
     starlight({
       title: 'Helper.DB Wiki',
       description: 'Documentação completa do Helper.DB',
+      plugins: [
+        starlightLinksValidator(),
+        starlightImageZoom(),
+        starlightSidebarTopics([
+          {
+            label: 'Operações Básicas',
+            link: '/docs/basic/',
+            icon: 'document'
+          },
+          {
+            label: 'Arrays',
+            link: '/docs/arrays/',
+            icon: 'list-format'
+          },
+          {
+            label: 'Busca',
+            link: '/docs/search/',
+            icon: 'magnifier'
+          }
+        ])
+      ],
       social: [
         {
           label: 'GitHub',
@@ -135,8 +158,7 @@ export default defineConfig({
       ],
     }),
     mdx(),
-    tailwind(),
-    pagefind()
+    tailwind()
   ],
   server: {
     host: '0.0.0.0',
